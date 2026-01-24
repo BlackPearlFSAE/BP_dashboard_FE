@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BPDV:BlackPearl Data Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="number"] {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100px;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .btn-primary { background: #2196F3; color: white; }
+    .btn-success { background: #4CAF50; color: white; }
+    .btn-danger { background: #f44336; color: white; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    #status {
+      padding: 8px 16px;
+      background: #e3f2fd;
+      border-radius: 4px;
+      color: #1976d2;
+      font-weight: 500;
+    }
+    #noData {
+      text-align: center;
+      padding: 40px;
+      background: white;
+      border-radius: 8px;
+      color: #666;
+      display: none;
+    }
+    .session-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .session-title {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #333;
+    }
+    .delete-btn {
+      background: #f44336;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .delete-btn:hover { background: #d32f2f; }
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1200px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+    h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+    }
+    .chart-container {
+      height: 400px;
+      position: relative;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px;
+      background: #fafafa;
+    }
+    .zoom-controls {
+      text-align: center;
+      margin-top: 10px;
+      color: #666;
+      font-size: 0.9em;
+    }
+    .table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    thead {
+      position: sticky;
+      top: 0;
+      background: #2196F3;
+      color: white;
+      z-index: 10;
+    }
+    th {
+      padding: 12px 8px;
+      text-align: left;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    th:hover { background: #1976d2; }
+    .filter-header {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .filter-controls {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .filter-select {
+      padding: 4px;
+      font-size: 0.85em;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 3px;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      cursor: pointer;
+    }
+    .time-range-input {
+      padding: 3px 5px;
+      font-size: 0.8em;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 3px;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      width: 110px;
+    }
+    .sort-indicator {
+      font-size: 0.8em;
+      margin-left: 5px;
+    }
+    .reset-filters {
+      padding: 4px 8px;
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    tr:hover { background: #f5f5f5; }
+    .timestamp-info {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .timestamp-title {
+      font-weight: bold;
+      color: #2196F3;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    .sensor-data {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .sensor-item {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      border-left: 3px solid #2196F3;
+    }
+    .sensor-topic {
+      font-weight: 600;
+      color: #333;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+    .sensor-value {
+      color: #666;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <div class="control-group">
+      <label>ระยะเวลาอัพเดท (วินาที):</label>
+      <input type="number" id="intervalInput" value="2" min="0.5" step="0.5">
+      <button class="btn-primary" onclick="updateInterval()">ตั้งค่า</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <input type="file" id="fileInput" accept=".json" />
+      <button onclick="handleFileUpload()">📂 Upload JSON</button>
+      <span id="uploadStatus" style="margin-left:8px;"></span>
+    </div>
+    <button class="btn-danger" id="toggleBtn" onclick="toggleAutoUpdate()">⏸️ หยุดอัพเดท</button>
+    <button class="btn-success" onclick="manualUpdate()">🔄 อัพเดทตอนนี้</button>
+    <div id="status">อัพเดททุก 2 วินาที</div>
+  </div>
+
+  <div id="noData">ไม่มีข้อมูล</div>
+  <div id="sections"></div>
+  <iframe src="https://jsonbp.netlify.app/" width="100%" height="1000px"></iframe>
+  
+  <script>
+    const API_URL = "https://mctrl.kmutt.ac.th/ken-api/api/stat/";
+    const DELETE_URL = "https://mctrl.kmutt.ac.th/ken-api/api/stat/delete-session";
+
+    let charts = {};
+    let updateIntervalId = null;
+    let currentInterval = 2000;
+    let isAutoUpdateEnabled = true;
+    let allData = {};
+    let tableFilters = {};
+
+    function formatTimeInput(input) {
+      // เอาเฉพาะตัวเลข
+      let v = input.value.replace(/\D/g, "");
+
+      // จำกัดความยาว 6 หลัก (HHMMSS)
+      v = v.slice(0, 6);
+
+      let h = v.slice(0, 2);
+      let m = v.slice(2, 4);
+      let s = v.slice(4, 6);
+
+      let result = h;
+      if (v.length > 2) result += ":" + m;
+      if (v.length > 4) result += ":" + s;
+
+      input.value = result;
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(API_URL);
+        const json = await res.json();
+        
+        if (!json || json.length === 0) {
+          document.getElementById('noData').style.display = 'block';
+          document.getElementById('sections').innerHTML = '';
+          return;
+        }
+        
+        document.getElementById('noData').style.display = 'none';
+        renderSections(json);
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+    }
+
+    function handleFileUpload() {
+      const input = document.getElementById("fileInput");
+      const status = document.getElementById("uploadStatus");
+
+      if (!input.files || input.files.length === 0) {
+        alert("กรุณาเลือกไฟล์ JSON");
+        return;
+      }
+
+      const file = input.files[0];
+
+      if (!file.name.endsWith(".json")) {
+        alert("รองรับเฉพาะไฟล์ .json");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+
+          if (!Array.isArray(parsed)) {
+            alert("ไฟล์ต้องเป็น JSON Array");
+            return;
+          }
+
+          const valid = parsed.every(
+            item => item.data && item.data.session_id !== undefined
+          );
+
+          if (!valid) {
+            alert("โครงสร้างไฟล์ไม่ตรงกับข้อมูลจาก API");
+            return;
+          }
+
+          renderSections(parsed);
+
+          status.textContent = `✅ โหลดไฟล์สำเร็จ (${parsed.length} records)`;
+          status.style.color = "green";
+        } catch (err) {
+          alert("ไฟล์ JSON ไม่ถูกต้อง");
+          console.error(err);
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    function flattenObject(obj, prefix = "", res = {}) {
+      for (const key in obj) {
+        const value = obj[key];
+        const newKey = prefix ? `${prefix}.${key}` : key;
+
+        if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+          flattenObject(value, newKey, res);
+        } else {
+          res[newKey] = value;
+        }
+      }
+      return res;
+    }
+
+    function normalizeDynamic(item) {
+      const meta = {
+        id: item.id,
+        session_id: item.data?.session_id,
+        experiment_id: item.data?.experiment_id,
+        topic_name: item.data?.topic_name || item.data?.topic,
+        timestamp: item.data?.data?.timestamp ?? item.data?.timestamp ?? new Date(item.createdAt).getTime(),
+        createdAt: item.createdAt
+      };
+
+      const payload = item.data?.data ?? {};
+      const flatPayload = flattenObject(payload);
+
+      return { ...meta, ...flatPayload };
+    }
+
+    function collectAllKeys(rows) {
+      const set = new Set();
+      rows.forEach(r => Object.keys(r).forEach(k => set.add(k)));
+      return Array.from(set);
+    }
+
+    function exportSectionJSON(key) {
+      const section = allData[key];
+      if (!section) return;
+
+      const rows = section.data;
+
+      const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `session_${section.session_id}_exp_${section.experiment_id}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportSectionCSV(key) {
+      const section = allData[key];
+      if (!section) return;
+
+      const rows = section.data.map(normalizeDynamic);
+      if (rows.length === 0) return;
+
+      const headers = collectAllKeys(rows);
+
+      const csv = [
+        headers.join(","),
+        ...rows.map(r => headers.map(h => JSON.stringify(r[h] ?? "")).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `session_${section.session_id}_exp_${section.experiment_id}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function getTopicName(item) {
+      return item?.data?.topic ?? item?.data?.topic_name ?? 'undefined';
+    }
+
+    function renderSections(data) {
+      const grouped = {};
+      
+      data.forEach(item => {
+        const sid = item.data.session_id;
+        const eid = item.data.experiment_id;
+        const key = `${sid}_${eid}`;
+        
+        if (!grouped[key]) {
+          grouped[key] = {
+            session_id: sid,
+            experiment_id: eid,
+            data: []
+          };
+        }
+        grouped[key].data.push(item);
+      });
+      
+      allData = grouped;
+      
+      const sectionsDiv = document.getElementById('sections');
+      sectionsDiv.innerHTML = '';
+      
+      Object.keys(grouped).sort().forEach(key => {
+        const section = grouped[key];
+        const sectionDiv = createSection(section);
+        sectionsDiv.appendChild(sectionDiv);
+      });
+    }
+
+    function createSection(section) {
+      const { session_id, experiment_id, data } = section;
+      const chartId = `chart_${session_id}_${experiment_id}`;
+      const tableId = `table_${session_id}_${experiment_id}`;
+      const infoId = `info_${session_id}_${experiment_id}`;
+      const key = `${session_id}_${experiment_id}`;
+      
+      const div = document.createElement('div');
+      div.className = 'session-section';
+      
+      div.innerHTML = `
+        <div class="session-header">
+          <div class="session-title">
+            Session ${session_id} | Experiment ${experiment_id}
+          </div>
+          <div class="session-actions">
+            <button class="export-btn" onclick="exportSectionJSON('${key}')">
+              📦 Export JSON
+            </button>
+            <button class="export-btn" onclick="exportSectionCSV('${key}')">
+              📊 Export CSV
+            </button>
+            <button class="delete-btn" onclick="deleteSession(${session_id}, ${experiment_id})">
+              🗑️ ลบข้อมูล
+            </button>
+          </div>
+        </div>
+        <div class="content-grid">
+          <div>
+            <h3>GPS Path</h3>
+            <div class="chart-container">
+              <canvas id="${chartId}"></canvas>
+            </div>
+            <div class="zoom-controls"></div>
+            <div id="${infoId}"></div>
+          </div>
+          <div>
+            <h3>Sensor Data</h3>
+            <div class="table-container">
+              <table>
+                <thead id="thead_${tableId}"></thead>
+                <tbody id="${tableId}"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        createChart(chartId, data, infoId, key);
+        updateTable(tableId, data, key);
+      }, 0);
+      
+      return div;
+    }
+
+    function createChart(chartId, data, infoId, key) {
+      const canvas = document.getElementById(chartId);
+      if (!canvas) return;
+      
+      const gpsData = data
+        .filter(d => {
+          const topic = getTopicName(d);
+          return topic === "gps/location";
+        })
+        .map(d => ({
+          x: d.data.data.longitude,
+          y: d.data.data.latitude,
+          timestamp: d.createdAt
+        }));
+      
+      if (charts[chartId]) {
+        charts[chartId].destroy();
+      }
+      
+      charts[chartId] = new Chart(canvas, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'GPS Path',
+            data: gpsData,
+            showLine: true,
+            borderColor: '#2196F3',
+            backgroundColor: '#2196F3',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              const point = gpsData[index];
+              showTimestampData(point.timestamp, data, infoId);
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Longitude' },
+              type: 'linear'
+            },
+            y: {
+              title: { display: true, text: 'Latitude' },
+              type: 'linear'
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const point = gpsData[context.dataIndex];
+                  const date = new Date(point.timestamp);
+                  return [
+                    `Lat: ${point.y.toFixed(6)}`,
+                    `Lng: ${point.x.toFixed(6)}`,
+                    `Time: ${date.toLocaleString('th-TH')}`
+                  ];
+                }
+              }
+            },
+            zoom: {
+              pan: {
+                enabled: true,
+                mode: 'xy'
+              },
+              zoom: {
+                wheel: { enabled: true },
+                pinch: { enabled: true },
+                drag: {
+                  enabled: true,
+                  borderColor: 'rgba(33, 150, 243, 0.3)',
+                  borderWidth: 1,
+                  backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                },
+                mode: 'xy'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function showTimestampData(timestamp, allData, infoId) {
+      const infoDiv = document.getElementById(infoId);
+      if (!infoDiv) return;
+      
+      const targetTime = new Date(timestamp).getTime();
+      const timeWindow = 1000;
+      
+      const nearbyData = allData.filter(d => {
+        const itemTime = new Date(d.createdAt).getTime();
+        return Math.abs(itemTime - targetTime) <= timeWindow;
+      });
+      
+      if (nearbyData.length === 0) {
+        infoDiv.innerHTML = '<div class="timestamp-info">ไม่พบข้อมูลในช่วงเวลานี้</div>';
+        return;
+      }
+      
+      const date = new Date(timestamp);
+      let html = `
+        <div class="timestamp-info">
+          <div class="timestamp-title">📍 ข้อมูล ณ เวลา ${date.toLocaleString('th-TH')}</div>
+          <div class="sensor-data">
+      `;
+      
+      nearbyData.forEach(item => {
+        const topic = getTopicName(item);
+        const d = item.data.data;
+        let valueText = '';
+        
+        if (d.latitude !== undefined && d.longitude !== undefined) {
+          valueText = `Lat: ${d.latitude.toFixed(6)}, Lng: ${d.longitude.toFixed(6)}`;
+        } else if (d.values) {
+          valueText = `X: ${d.values.x?.toFixed(3) ?? '-'}, Y: ${d.values.y?.toFixed(3) ?? '-'}, Z: ${d.values.z?.toFixed(3) ?? '-'}`;
+        } else if (d.value !== undefined) {
+          valueText = `${d.value.toFixed(3)} ${d.sensor_id ? `(${d.sensor_id})` : ''}`;
+        }
+        
+        html += `
+          <div class="sensor-item">
+            <div class="sensor-topic">${topic}</div>
+            <div class="sensor-value">${valueText}</div>
+          </div>
+        `;
+      });
+      
+      html += '</div></div>';
+      infoDiv.innerHTML = html;
+    }
+
+    function updateTable(tableId, data, key) {
+      const tbody = document.getElementById(tableId);
+      const thead = document.getElementById(`thead_${tableId}`);
+      if (!tbody || !thead) return;
+      
+      if (!tableFilters[key]) {
+        tableFilters[key] = {
+          topicFilter: 'all',
+          timeSort: 'none',
+          valueAgg: 'raw',
+          timeStart: '',
+          timeEnd: ''
+        };
+      }
+      
+      const filters = tableFilters[key];
+      
+      const topics = [...new Set(data.map(d => getTopicName(d)))].sort();
+      
+      thead.innerHTML = `
+        <tr>
+          <th>
+            <div class="filter-header">
+              <div>Time</div>
+              <div class="filter-controls">
+                <select class="filter-select" onchange="changeTimeSort('${key}', this.value)">
+                  <option value="none" ${filters.timeSort === 'none' ? 'selected' : ''}>ปกติ</option>
+                  <option value="asc" ${filters.timeSort === 'asc' ? 'selected' : ''}>เก่า→ใหม่</option>
+                  <option value="desc" ${filters.timeSort === 'desc' ? 'selected' : ''}>ใหม่→เก่า</option>
+                </select>
+              </div>
+              <div class="filter-controls" style="margin-top: 5px;">
+                <input type="text"
+                  class="time-range-input"
+                  placeholder="HH:mm:ss start"
+                  value="${filters.timeStart || ''}"
+                  oninput="formatTimeInput(this)"
+                  onchange="changeTimeRange('${key}', 'start', this.value)">
+
+                <span style="color: white; font-size: 0.9em;">-</span>
+                <input type="text"
+                  class="time-range-input"
+                  placeholder="HH:mm:ss end"
+                  value="${filters.timeEnd || ''}"
+                  oninput="formatTimeInput(this)"
+                  onchange="changeTimeRange('${key}', 'end', this.value)">
+              </div>
+            </div>
+          </th>
+          <th>
+            <div class="filter-header">
+              <div>Topic</div>
+              <div class="filter-controls">
+                <select class="filter-select" onchange="changeTopicFilter('${key}', this.value)">
+                  <option value="all">ทั้งหมด</option>
+                  ${topics.map(t => `<option value="${t}" ${filters.topicFilter === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </th>
+          <th>
+            <div class="filter-header">
+              <div>Value</div>
+              <div class="filter-controls">
+                <select class="filter-select" onchange="changeValueAgg('${key}', this.value)">
+                  <option value="raw" ${filters.valueAgg === 'raw' ? 'selected' : ''}>Raw</option>
+                  <option value="min" ${filters.valueAgg === 'min' ? 'selected' : ''}>Min</option>
+                  <option value="max" ${filters.valueAgg === 'max' ? 'selected' : ''}>Max</option>
+                  <option value="mean" ${filters.valueAgg === 'mean' ? 'selected' : ''}>Mean</option>
+                </select>
+              </div>
+            </div>
+          </th>
+          <th>
+            <button class="reset-filters" onclick="resetFilters('${key}')">↺ Reset</button>
+          </th>
+        </tr>
+      `;
+      
+      let filteredData = data.filter(d => {
+        if (filters.topicFilter !== 'all' && getTopicName(d) !== filters.topicFilter) {
+          return false;
+        }
+        
+        if (filters.timeStart || filters.timeEnd) {
+          const itemDate = new Date(d.createdAt);
+          const itemTime = itemDate.toTimeString().slice(0, 8);
+          
+          if (filters.timeStart && itemTime < filters.timeStart) {
+            return false;
+          }
+          if (filters.timeEnd && itemTime > filters.timeEnd) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+      
+      if (filters.timeSort === 'asc') {
+        filteredData.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      } else if (filters.timeSort === 'desc') {
+        filteredData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+      
+      if (filters.valueAgg !== 'raw') {
+        filteredData = aggregateData(filteredData, filters.valueAgg);
+      }
+      
+      tbody.innerHTML = filteredData.map(item => {
+        const d = item.data.data;
+        const time = new Date(item.createdAt).toLocaleString('th-TH');
+        const topic = getTopicName(item);
+        
+        let valueText = '';
+        if (d.values) {
+          valueText = `X: ${d.values.x?.toFixed(3) ?? '-'}, Y: ${d.values.y?.toFixed(3) ?? '-'}, Z: ${d.values.z?.toFixed(3) ?? '-'}`;
+        } else if (d.value !== undefined) {
+          valueText = d.value.toFixed(3);
+        } else if (d.latitude !== undefined && d.longitude !== undefined) {
+          valueText = `Lat: ${d.latitude.toFixed(6)}, Lng: ${d.longitude.toFixed(6)}`;
+        }
+        
+        const sensorId = d.sensor_id ? d.sensor_id : '';
+        
+        return `
+          <tr>
+            <td>${time}</td>
+            <td>${topic}</td>
+            <td>${valueText}</td>
+            <td>${sensorId}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function aggregateData(data, aggType) {
+      const grouped = {};
+      
+      data.forEach(item => {
+        const topic = getTopicName(item);
+        if (!grouped[topic]) {
+          grouped[topic] = [];
+        }
+        grouped[topic].push(item);
+      });
+      
+      const result = [];
+      
+      Object.keys(grouped).forEach(topic => {
+        const items = grouped[topic];
+        const values = [];
+        
+        items.forEach(item => {
+          const d = item.data.data;
+          if (d.values) {
+            values.push({ x: d.values.x, y: d.values.y, z: d.values.z });
+          } else if (d.value !== undefined) {
+            values.push(d.value);
+          }
+        });
+        
+        if (values.length === 0) {
+          result.push(items[0]);
+          return;
+        }
+        
+        let aggValue;
+        if (typeof values[0] === 'object') {
+          const xVals = values.map(v => v.x).filter(v => v != null);
+          const yVals = values.map(v => v.y).filter(v => v != null);
+          const zVals = values.map(v => v.z).filter(v => v != null);
+          
+          aggValue = {
+            x: calculateAgg(xVals, aggType),
+            y: calculateAgg(yVals, aggType),
+            z: calculateAgg(zVals, aggType)
+          };
+          
+          const newItem = JSON.parse(JSON.stringify(items[0]));
+          newItem.data.data.values = aggValue;
+          result.push(newItem);
+        } else {
+          aggValue = calculateAgg(values, aggType);
+          const newItem = JSON.parse(JSON.stringify(items[0]));
+          newItem.data.data.value = aggValue;
+          result.push(newItem);
+        }
+      });
+      
+      return result;
+    }
+
+    function calculateAgg(values, aggType) {
+      if (values.length === 0) return null;
+      
+      switch (aggType) {
+        case 'min':
+          return Math.min(...values);
+        case 'max':
+          return Math.max(...values);
+        case 'mean':
+          return values.reduce((a, b) => a + b, 0) / values.length;
+        default:
+          return values[0];
+      }
+    }
+
+    function changeTopicFilter(key, value) {
+      tableFilters[key].topicFilter = value;
+      const section = allData[key];
+      if (section) {
+        updateTable(`table_${section.session_id}_${section.experiment_id}`, section.data, key);
+      }
+    }
+
+    function changeTimeSort(key, value) {
+      tableFilters[key].timeSort = value;
+      const section = allData[key];
+      if (section) {
+        updateTable(`table_${section.session_id}_${section.experiment_id}`, section.data, key);
+      }
+    }
+
+    function changeValueAgg(key, value) {
+      tableFilters[key].valueAgg = value;
+      const section = allData[key];
+      if (section) {
+        updateTable(`table_${section.session_id}_${section.experiment_id}`, section.data, key);
+      }
+    }
+
+    function changeTimeRange(key, type, value) {
+      if (type === 'start') {
+        tableFilters[key].timeStart = value;
+      } else {
+        tableFilters[key].timeEnd = value;
+      }
+      const section = allData[key];
+      if (section) {
+        updateTable(`table_${section.session_id}_${section.experiment_id}`, section.data, key);
+      }
+    }
+
+    function resetFilters(key) {
+      tableFilters[key] = {
+        topicFilter: 'all',
+        timeSort: 'none',
+        valueAgg: 'raw',
+        timeStart: '',
+        timeEnd: ''
+      };
+      const section = allData[key];
+      if (section) {
+        updateTable(`table_${section.session_id}_${section.experiment_id}`, section.data, key);
+      }
+    }
+
+    async function deleteSession(session_id, experiment_id) {
+      if (!confirm(`ต้องการลบข้อมูล Session ${session_id}, Experiment ${experiment_id}?`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(DELETE_URL, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id, experiment_id })
+        });
+        
+        const json = await res.json();
+        alert("ลบข้อมูลสำเร็จ!");
+        loadData();
+      } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+      }
+    }
+
+    function updateInterval() {
+      const input = document.getElementById('intervalInput');
+      const seconds = parseFloat(input.value);
+      
+      if (isNaN(seconds) || seconds < 0.5) {
+        alert('กรุณาใส่ค่าอย่างน้อย 0.5 วินาที');
+        return;
+      }
+      
+      currentInterval = seconds * 1000;
+      
+      if (updateIntervalId) {
+        clearInterval(updateIntervalId);
+      }
+      
+      if (isAutoUpdateEnabled) {
+        updateIntervalId = setInterval(loadData, currentInterval);
+        document.getElementById('status').textContent = `อัพเดททุก ${seconds} วินาที`;
+      } else {
+        document.getElementById('status').textContent = `หยุดอัพเดทอัตโนมัติ (ตั้งค่าไว้ ${seconds} วินาที)`;
+      }
+    }
+
+    function toggleAutoUpdate() {
+      const btn = document.getElementById('toggleBtn');
+      const status = document.getElementById('status');
+      
+      isAutoUpdateEnabled = !isAutoUpdateEnabled;
+      
+      if (isAutoUpdateEnabled) {
+        updateIntervalId = setInterval(loadData, currentInterval);
+        btn.style.background = '#f44336';
+        btn.textContent = '⏸️ หยุดอัพเดท';
+        status.textContent = `อัพเดททุก ${currentInterval / 1000} วินาที`;
+      } else {
+        if (updateIntervalId) {
+          clearInterval(updateIntervalId);
+        }
+        btn.style.background = '#4CAF50';
+        btn.textContent = '▶️ เริ่มอัพเดท';
+        status.textContent = 'หยุดอัพเดทอัตโนมัติ';
+      }
+    }
+
+    function manualUpdate() {
+      loadData();
+      const status = document.getElementById('status');
+      const oldText = status.textContent;
+      status.textContent = '✅ อัพเดทแล้ว!';
+      setTimeout(() => {
+        if (isAutoUpdateEnabled) {
+          status.textContent = `อัพเดททุก ${currentInterval / 1000} วินาที`;
+        } else {
+          status.textContent = 'หยุดอัพเดทอัตโนมัติ';
+        }
+      }, 1500);
+    }
+
+    updateIntervalId = setInterval(loadData, currentInterval);
+    loadData();
+  </script>
+</body>
+</html>
