@@ -1,6 +1,6 @@
 // Use relative path for proxy in development, absolute for production if needed
 const isDev = import.meta.env.DEV;
-export const API_URL = isDev ? "/api/stat/" : "https://mctrl.kmutt.ac.th/ken-api/api/stat/";
+export const API_URL = isDev ? "/api/stat/" : "https://blackpearl-ws.onrender.com/api/stat/";
 export const DELETE_URL = isDev ? "/api/stat/delete-session" : "https://mctrl.kmutt.ac.th/ken-api/api/stat/delete-session";
 
 export const fetchSessions = async () => {
