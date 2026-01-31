@@ -2,6 +2,7 @@
 const isDev = import.meta.env.DEV;
 export const API_URL = isDev ? "/api/stat/" : "https://blackpearl-ws.onrender.com/api/stat/";
 export const DELETE_URL = isDev ? "/api/stat/delete-session" : "https://mctrl.kmutt.ac.th/ken-api/api/stat/delete-session";
+export const DELETE_ALL_URL = isDev ? "/api/stat/delete-all" : "https://blackpearl-ws.onrender.com/api/stat/delete-all";
 
 export const fetchSessions = async () => {
     const response = await fetch(API_URL);
@@ -23,6 +24,18 @@ export const deleteSession = async (sessionId, experimentId) => {
         return response.ok;
     } catch (error) {
         console.error("Delete Error:", error);
+        return false;
+    }
+};
+
+export const deleteAll = async () => {
+    try {
+        const response = await fetch(DELETE_ALL_URL, {
+            method: 'DELETE'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Delete All Error:", error);
         return false;
     }
 };

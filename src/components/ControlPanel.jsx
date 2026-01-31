@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Upload, Pause, Play, RefreshCw, Clock } from 'lucide-react';
+import { Upload, Pause, Play, RefreshCw, Clock, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 export const ControlPanel = ({
     interval,
@@ -11,7 +12,9 @@ export const ControlPanel = ({
     onManualUpdate,
     onFileUpload,
     uploadStatus
+    , onDeleteAll
 }) => {
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -77,6 +80,19 @@ export const ControlPanel = ({
 
                     <Button variant="primary" onClick={onManualUpdate}>
                         <RefreshCw size={16} /> Update Now
+                    </Button>
+                    <Button
+                        variant="danger"
+                        onClick={async () => {
+                            if (!window.confirm('Delete ALL data from server? This cannot be undone.')) return;
+                            if (!onDeleteAll) return;
+                            setIsDeletingAll(true);
+                            await onDeleteAll();
+                            setIsDeletingAll(false);
+                        }}
+                        disabled={isDeletingAll}
+                    >
+                        <Trash2 size={16} /> {isDeletingAll ? 'Deleting...' : 'Delete All'}
                     </Button>
                 </div>
 

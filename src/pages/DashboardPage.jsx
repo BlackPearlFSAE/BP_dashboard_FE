@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ControlPanel } from '../components/ControlPanel';
 import { Dashboard } from '../components/Dashboard';
-import { fetchSessions } from '../utils/api';
-import { normalizeData, groupDataBySession } from '../utils/dataProcessor';
+import { fetchSessions, deleteAll } from '../utils/api';
+import { normalizeData } from '../utils/dataProcessor';
 
 export const DashboardPage = () => {
     const [rawData, setRawData] = useState([]);
@@ -13,14 +13,21 @@ export const DashboardPage = () => {
     const [debugInfo, setDebugInfo] = useState('Initializing...');
     const [error, setError] = useState(null);
 
-    // Main Data Processing
+    // Main Data Processing - keep flat list as a single "session" for rendering
     const processAndSetData = useCallback((data) => {
         try {
             // Normalize mapping
             const normalized = data.map(item => normalizeData(item));
-            // Grouping
-            const grouped = groupDataBySession(normalized);
-            setSessions(grouped);
+
+            // Create a single synthetic session so UI renders everything together
+            const synthetic = {
+                key: 'all_0',
+                session_id: 'all',
+                experiment_id: 'all',
+                data: normalized
+            };
+
+            setSessions(normalized.length ? [synthetic] : []);
             setRawData(data); // Keep raw for reference or export if needed
             setError(null);
         } catch (err) {
@@ -48,6 +55,20 @@ export const DashboardPage = () => {
             setDebugInfo('Error: ' + err.message);
         }
     }, [processAndSetData]);
+
+    // Delete All handler
+    const handleDeleteAll = async () => {
+        setDebugInfo('Deleting all data...');
+        const ok = await deleteAll();
+        if (ok) {
+            setSessions([]);
+            setRawData([]);
+            setDebugInfo('All data deleted');
+        } else {
+            setDebugInfo('Delete all failed');
+            alert('Failed to delete all data on server');
+        }
+    };
 
     // Auto Update Loop
     useEffect(() => {
@@ -111,6 +132,7 @@ export const DashboardPage = () => {
                 onManualUpdate={loadData}
                 onFileUpload={handleFileUpload}
                 uploadStatus={uploadStatus}
+                onDeleteAll={handleDeleteAll}
             />
 
             {/* Debug Info */}
