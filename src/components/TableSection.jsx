@@ -1,20 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronUp, ChevronDown, Filter } from 'lucide-react';
+import { getAvailableGroups } from '../utils/dataProcessor';
 
 export const TableSection = ({ data }) => {
-    const [filterTopic, setFilterTopic] = useState('all');
+    const [filterGroup, setFilterGroup] = useState('all');
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc' by time
 
-    const topics = useMemo(() => {
-        const t = new Set(data.map(d => d.topic_name));
-        return ['all', ...Array.from(t).sort()];
+    const groups = useMemo(() => {
+        const g = getAvailableGroups(data);
+        return ['all', ...g];
     }, [data]);
 
     const filteredData = useMemo(() => {
         let res = data;
-        if (filterTopic !== 'all') {
-            res = res.filter(d => d.topic_name === filterTopic);
+        if (filterGroup !== 'all') {
+            res = res.filter(d => d.group === filterGroup);
         }
 
         return res.sort((a, b) => {
@@ -22,20 +23,19 @@ export const TableSection = ({ data }) => {
                 ? a.timestamp - b.timestamp
                 : b.timestamp - a.timestamp;
         });
-    }, [data, filterTopic, sortOrder]);
+    }, [data, filterGroup, sortOrder]);
 
     const formatValue = (item) => {
-        // Check for values object
-        if (item['values.x'] !== undefined) {
-            return `X: ${item['values.x']?.toFixed(3)}, Y: ${item['values.y']?.toFixed(3)}, Z: ${item['values.z']?.toFixed(3)}`;
+        // Format values object
+        if (item.values && typeof item.values === 'object') {
+            return Object.entries(item.values)
+                .map(([key, val]) => {
+                    if (typeof val === 'number') return `${key}: ${val.toFixed(3)}`;
+                    return `${key}: ${val}`;
+                })
+                .join(' | ');
         }
-        if (item.value !== undefined) {
-            return typeof item.value === 'number' ? item.value.toFixed(3) : String(item.value);
-        }
-        if (item.latitude !== undefined) {
-            return `Lat: ${item.latitude.toFixed(6)}, Lng: ${item.longitude.toFixed(6)}`;
-        }
-        return JSON.stringify(item.original?.data?.data || '').slice(0, 50);
+        return 'N/A';
     };
 
     return (
@@ -48,10 +48,10 @@ export const TableSection = ({ data }) => {
                 <div className="flex gap-2">
                     <select
                         className="bg-surface border border-border rounded px-2 py-1 text-xs text-text focus:border-primary outline-none transition-colors duration-300"
-                        value={filterTopic}
-                        onChange={e => setFilterTopic(e.target.value)}
+                        value={filterGroup}
+                        onChange={e => setFilterGroup(e.target.value)}
                     >
-                        {topics.map(t => <option key={t} value={t}>{t === 'all' ? 'All Topics' : t}</option>)}
+                        {groups.map(g => <option key={g} value={g}>{g === 'all' ? 'All Groups' : g}</option>)}
                     </select>
 
                     <button
@@ -68,8 +68,8 @@ export const TableSection = ({ data }) => {
                     <thead className="bg-surface sticky top-0 z-10 shadow-sm">
                         <tr>
                             <th className="p-3 font-black text-accent border-b border-border tracking-wider">Time</th>
-                            <th className="p-3 font-black text-accent border-b border-border tracking-wider">Topic</th>
-                            <th className="p-3 font-black text-accent border-b border-border tracking-wider">Value</th>
+                            <th className="p-3 font-black text-accent border-b border-border tracking-wider">Group</th>
+                            <th className="p-3 font-black text-accent border-b border-border tracking-wider">Values</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,10 +78,10 @@ export const TableSection = ({ data }) => {
                                 <td className="p-2 text-text/80 whitespace-nowrap">
                                     {format(row.timestamp, 'HH:mm:ss.SS')}
                                 </td>
-                                <td className="p-2 text-primary font-bold whitespace-nowrap break-all">
-                                    {row.topic_name}
+                                <td className="p-2 text-primary font-bold whitespace-nowrap">
+                                    {row.group}
                                 </td>
-                                <td className="p-2 text-text font-medium break-all">
+                                <td className="p-2 text-text font-medium break-all text-xs">
                                     {formatValue(row)}
                                 </td>
                             </tr>

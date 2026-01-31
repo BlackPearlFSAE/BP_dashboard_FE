@@ -27,25 +27,34 @@ export const SessionCard = ({ session, onDelete }) => {
     };
 
     const handleExportCSV = () => {
-        // For CSV, we flattening again.
-        // Reuse logic: collect all keys.
-        const rows = session.data; // these are normalized flat objects
+        // For CSV, flatten the structure: one row per data point with all values
+        const rows = session.data;
         if (!rows.length) return;
 
-        // Collect all possible keys
+        // Collect all unique value keys across all rows
         const keysSet = new Set();
-        rows.forEach(r => Object.keys(r).forEach(k => {
-            if (k !== 'original') keysSet.add(k);
-        }));
-        const headers = Array.from(keysSet).sort();
+        rows.forEach(r => {
+            if (r.values && typeof r.values === 'object') {
+                Object.keys(r.values).forEach(k => keysSet.add(k));
+            }
+        });
+        
+        const headers = ['timestamp', 'group', ...Array.from(keysSet).sort()];
 
         const csvContent = [
             headers.join(","),
-            ...rows.map(r => headers.map(h => {
-                let val = r[h] ?? "";
-                if (typeof val === 'object') val = JSON.stringify(val);
-                return JSON.stringify(val); // Escape commas
-            }).join(","))
+            ...rows.map(r => {
+                const base = [
+                    r.timestamp,
+                    r.group
+                ];
+                const values = headers.slice(2).map(h => {
+                    let val = r.values?.[h] ?? "";
+                    if (typeof val === 'object') val = JSON.stringify(val);
+                    return JSON.stringify(val);
+                });
+                return [...base, ...values].join(",");
+            })
         ].join("\n");
 
         const blob = new Blob([csvContent], { type: "text/csv" });
