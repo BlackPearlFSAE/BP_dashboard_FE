@@ -11,7 +11,9 @@ import {
     TimeScale,
     TimeSeriesScale,
     LineController,
-    ScatterController
+    BarController,
+    ScatterController,
+    BarElement,
 } from 'chart.js';
 import { Chart as ReactChart } from 'react-chartjs-2';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -32,7 +34,9 @@ ChartJS.register(
     TimeScale,
     TimeSeriesScale,
     LineController,
+    BarController,
     ScatterController,
+    BarElement,
     zoomPlugin
 );
 
@@ -44,6 +48,7 @@ export const ChartSection = ({ data }) => {
 
     const [selectedGroup, setSelectedGroup] = useState(groups[0] || '');
     const [selectedValues, setSelectedValues] = useState([]);
+    const [chartType, setChartType] = useState('line'); // 'line' or 'bar'
 
     // Get available value keys for the selected group
     const availableValues = useMemo(() => {
@@ -77,31 +82,31 @@ export const ChartSection = ({ data }) => {
         const filtered = data.filter(d => d.group === selectedGroup);
         filtered.sort((a, b) => a.timestamp - b.timestamp);
 
-        if (filtered.length === 0) return { type: 'line', data: { datasets: [] } };
+        if (filtered.length === 0) return { type: chartType, data: { datasets: [] } };
 
         const commonDataset = {
             borderWidth: 2,
-            pointRadius: 2,
+            pointRadius: chartType === 'bar' ? 0 : 2,
             tension: 0.1,
         };
 
         const datasets = selectedValues.map((valueKey, idx) => ({
             ...commonDataset,
             label: `${selectedGroup} (${valueKey})`,
-            data: filtered.map(d => ({ 
-                x: d.timestamp, 
-                y: d.values?.[valueKey] 
+            data: filtered.map(d => ({
+                x: d.timestamp,
+                y: d.values?.[valueKey]
             })),
             borderColor: getColor(idx),
-            backgroundColor: getColor(idx),
+            backgroundColor: chartType === 'bar' ? getColor(idx) : getColor(idx),
             spanGaps: true,
         }));
 
         return {
-            type: 'line',
+            type: chartType,
             data: { datasets }
         };
-    }, [data, selectedGroup, selectedValues]);
+    }, [data, selectedGroup, selectedValues, chartType]);
 
     // Theme-based colors
     const textColor = theme === 'dark' ? '#e0e0e0' : '#111827';
@@ -135,8 +140,8 @@ export const ChartSection = ({ data }) => {
                         let label = context.dataset.label || '';
                         if (label) label += ': ';
                         if (context.parsed.y !== null) {
-                            label += typeof context.parsed.y === 'boolean' 
-                                ? context.parsed.y 
+                            label += typeof context.parsed.y === 'boolean'
+                                ? context.parsed.y
                                 : context.parsed.y.toFixed(4);
                         }
                         return label;
@@ -178,23 +183,110 @@ export const ChartSection = ({ data }) => {
         });
     };
 
+    // --- Selective Download Logic ---
+    const handleDownload = (format) => {
+        const filtered = data
+            .filter(d => d.group === selectedGroup)
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        if (filtered.length === 0 || selectedValues.length === 0) {
+            alert("No data to download!");
+            return;
+        }
+
+        const dataToExport = filtered.map(item => {
+            const row = { timestamp: item.timestamp };
+            selectedValues.forEach(key => {
+                row[key] = item.values?.[key];
+            });
+            return row;
+        });
+
+        if (format === 'json') {
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
+            triggerDownload(blob, `chart_data_${selectedGroup}.json`);
+        } else if (format === 'csv') {
+            const headers = ['timestamp', ...selectedValues];
+            const csvContent = [
+                headers.join(","),
+                ...dataToExport.map(row =>
+                    headers.map(h => {
+                        let val = row[h] ?? "";
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        return val;
+                    }).join(",")
+                )
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv" });
+            triggerDownload(blob, `chart_data_${selectedGroup}.csv`);
+        }
+    };
+
+    const triggerDownload = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="w-full space-y-4">
             <div className="border-b border-border pb-4">
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                        <span className="text-muted/70">DATA VISUALIZATION</span> // {selectedGroup.toUpperCase()}
-                    </h3>
-                    <select
-                        className="bg-surface border border-border rounded px-3 py-1 text-sm text-text focus:border-primary outline-none transition-colors duration-300"
-                        value={selectedGroup}
-                        onChange={(e) => {
-                            setSelectedGroup(e.target.value);
-                            setSelectedValues([]);
-                        }}
-                    >
-                        {groups.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                            <span className="text-muted/70">DATA VISUALIZATION</span> // {selectedGroup.toUpperCase()}
+                        </h3>
+                        <select
+                            className="bg-surface border border-border rounded px-3 py-1 text-sm text-text focus:border-primary outline-none transition-colors duration-300"
+                            value={selectedGroup}
+                            onChange={(e) => {
+                                setSelectedGroup(e.target.value);
+                                setSelectedValues([]);
+                            }}
+                        >
+                            {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* Chart Type Selector */}
+                        <div className="flex items-center bg-surface border border-border rounded overflow-hidden">
+                            <button
+                                onClick={() => setChartType('line')}
+                                className={`px-3 py-1 text-xs font-bold transition-colors ${chartType === 'line' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
+                            >
+                                Line
+                            </button>
+                            <button
+                                onClick={() => setChartType('bar')}
+                                className={`px-3 py-1 text-xs font-bold transition-colors ${chartType === 'bar' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
+                            >
+                                Bar
+                            </button>
+                        </div>
+
+                        {/* Download Buttons */}
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => handleDownload('json')}
+                                className="px-3 py-1 bg-surface border border-border rounded text-xs text-text hover:border-primary transition-colors flex items-center gap-1"
+                                title="Download Visible JSON"
+                            >
+                                ↓ JSON
+                            </button>
+                            <button
+                                onClick={() => handleDownload('csv')}
+                                className="px-3 py-1 bg-surface border border-border rounded text-xs text-text hover:border-primary transition-colors flex items-center gap-1"
+                                title="Download Visible CSV"
+                            >
+                                ↓ CSV
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Value Selection Multi-Select */}
@@ -203,11 +295,10 @@ export const ChartSection = ({ data }) => {
                         <button
                             key={valueKey}
                             onClick={() => toggleValueSelection(valueKey)}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
-                                selectedValues.includes(valueKey)
-                                    ? 'bg-primary text-white border border-primary'
-                                    : 'bg-surface border border-border text-text hover:border-primary'
-                            }`}
+                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${selectedValues.includes(valueKey)
+                                ? 'bg-primary text-white border border-primary'
+                                : 'bg-surface border border-border text-text hover:border-primary'
+                                }`}
                         >
                             {valueKey}
                         </button>
@@ -222,7 +313,7 @@ export const ChartSection = ({ data }) => {
                             type={chartData.type}
                             data={chartData.data}
                             options={options}
-                            key={selectedGroup}
+                            key={`${selectedGroup}-${chartType}`}
                         />
                         <div className="absolute top-4 right-4 text-xs text-muted/50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             Scroll to zoom • Drag to pan
