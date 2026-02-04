@@ -235,13 +235,16 @@ export const ChartSection = ({ data }) => {
     return (
         <div className="w-full space-y-4">
             <div className="border-b border-border pb-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                            <span className="text-muted/70">DATA VISUALIZATION</span> // {selectedGroup.toUpperCase()}
+                {/* Header Row: Title & Controls */}
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
+
+                    {/* Left: Title & Group Selector */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="text-lg font-bold text-primary flex items-center gap-2 whitespace-nowrap">
+                            <span className="text-muted/70">DATA</span> // {selectedGroup.toUpperCase()}
                         </h3>
                         <select
-                            className="bg-surface border border-border rounded px-3 py-1 text-sm text-text focus:border-primary outline-none transition-colors duration-300"
+                            className="bg-surface border border-border rounded px-3 py-1.5 text-sm text-text focus:border-primary outline-none transition-colors duration-300 min-w-[120px]"
                             value={selectedGroup}
                             onChange={(e) => {
                                 setSelectedGroup(e.target.value);
@@ -252,52 +255,54 @@ export const ChartSection = ({ data }) => {
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Right: Controls (Chart Type & Download) */}
+                    <div className="flex flex-wrap items-center gap-3">
                         {/* Chart Type Selector */}
-                        <div className="flex items-center bg-surface border border-border rounded overflow-hidden">
+                        <div className="flex items-center bg-surface border border-border rounded overflow-hidden shrink-0">
                             <button
                                 onClick={() => setChartType('line')}
-                                className={`px-3 py-1 text-xs font-bold transition-colors ${chartType === 'line' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
+                                className={`px-4 py-1.5 text-xs font-bold transition-colors ${chartType === 'line' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
                             >
                                 Line
                             </button>
+                            <div className="w-px h-full bg-border"></div>
                             <button
                                 onClick={() => setChartType('bar')}
-                                className={`px-3 py-1 text-xs font-bold transition-colors ${chartType === 'bar' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
+                                className={`px-4 py-1.5 text-xs font-bold transition-colors ${chartType === 'bar' ? 'bg-primary text-white' : 'text-text hover:bg-white/5'}`}
                             >
                                 Bar
                             </button>
                         </div>
 
                         {/* Download Buttons */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handleDownload('json')}
-                                className="px-3 py-1 bg-surface border border-border rounded text-xs text-text hover:border-primary transition-colors flex items-center gap-1"
+                                className="px-3 py-1.5 bg-surface border border-border rounded text-xs text-text hover:border-primary hover:text-primary transition-all flex items-center gap-1.5 whitespace-nowrap"
                                 title="Download Visible JSON"
                             >
-                                ↓ JSON
+                                <span>↓</span> JSON
                             </button>
                             <button
                                 onClick={() => handleDownload('csv')}
-                                className="px-3 py-1 bg-surface border border-border rounded text-xs text-text hover:border-primary transition-colors flex items-center gap-1"
+                                className="px-3 py-1.5 bg-surface border border-border rounded text-xs text-text hover:border-primary hover:text-primary transition-all flex items-center gap-1.5 whitespace-nowrap"
                                 title="Download Visible CSV"
                             >
-                                ↓ CSV
+                                <span>↓</span> CSV
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Value Selection Multi-Select */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                     {availableValues.map(valueKey => (
                         <button
                             key={valueKey}
                             onClick={() => toggleValueSelection(valueKey)}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${selectedValues.includes(valueKey)
-                                ? 'bg-primary text-white border border-primary'
-                                : 'bg-surface border border-border text-text hover:border-primary'
+                            className={`px-3 py-1.5 rounded text-xs font-semibold transition-all duration-200 ${selectedValues.includes(valueKey)
+                                    ? 'bg-primary text-white border border-primary shadow-sm shadow-primary/20'
+                                    : 'bg-surface border border-border text-text hover:border-primary/50 hover:bg-surface/80'
                                 }`}
                         >
                             {valueKey}

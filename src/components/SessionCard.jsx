@@ -38,7 +38,7 @@ export const SessionCard = ({ session, onDelete }) => {
                 Object.keys(r.values).forEach(k => keysSet.add(k));
             }
         });
-        
+
         const headers = ['timestamp', 'group', ...Array.from(keysSet).sort()];
 
         const csvContent = [
@@ -106,7 +106,7 @@ export const SessionCard = ({ session, onDelete }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-[500px]">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-[600px]">
                 <div className="min-h-0 bg-surface rounded-lg p-2 border border-border">
                     <ChartSection data={session.data} />
                 </div>
