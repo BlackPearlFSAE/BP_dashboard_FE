@@ -2,19 +2,33 @@ import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronUp, ChevronDown, Filter } from 'lucide-react';
 
-export const TableSection = ({ data }) => {
+export const TableSection = ({ data, groupFilter }) => {
     const [filterTopic, setFilterTopic] = useState('all');
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc' by time
 
     const topics = useMemo(() => {
-        const t = new Set(data.map(d => d.topic_name));
+        const t = new Set();
+        data.forEach(d => {
+            // Support both old topic_name format and new group-based format
+            if (d.topic_name) {
+                t.add(d.topic_name);
+            } else {
+                const group = d.original?.data?.group;
+                if (!groupFilter || groupFilter.includes(group)) {
+                    t.add(group);
+                }
+            }
+        });
         return ['all', ...Array.from(t).sort()];
-    }, [data]);
+    }, [data, groupFilter]);
 
     const filteredData = useMemo(() => {
         let res = data;
         if (filterTopic !== 'all') {
-            res = res.filter(d => d.topic_name === filterTopic);
+            res = res.filter(d => {
+                const topicName = d.topic_name || d.original?.data?.group;
+                return topicName === filterTopic;
+            });
         }
 
         return res.sort((a, b) => {

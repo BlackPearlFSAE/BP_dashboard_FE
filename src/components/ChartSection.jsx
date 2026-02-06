@@ -35,17 +35,30 @@ ChartJS.register(
     zoomPlugin
 );
 
-export const ChartSection = ({ data }) => {
+export const ChartSection = ({ data, groupFilter }) => {
     const { theme } = useTheme();
 
-    // Extract all unique topics
+    // Extract all unique topics (filtered by groupFilter if provided)
     const topics = useMemo(() => {
         const t = new Set();
         data.forEach(d => {
-            if (d.topic_name) t.add(d.topic_name);
+            // Support both old topic_name format and new group-based format
+            if (d.topic_name) {
+                t.add(d.topic_name);
+            } else {
+                // Extract keys from flattened data
+                const group = d.original?.data?.group;
+                if (!groupFilter || groupFilter.includes(group)) {
+                    Object.keys(d).forEach(key => {
+                        if (!['id', 'session_id', 'timestamp', 'original', 'latitude', 'longitude'].includes(key)) {
+                            t.add(key);
+                        }
+                    });
+                }
+            }
         });
         return Array.from(t).sort();
-    }, [data]);
+    }, [data, groupFilter]);
 
     const [selectedTopic, setSelectedTopic] = useState(topics.includes('gps/location') ? 'gps/location' : topics[0] || '');
 

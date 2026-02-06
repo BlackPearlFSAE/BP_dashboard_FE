@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, History, Settings, Menu, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Battery, History, Settings, Menu, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export const MainLayout = ({ children }) => {
@@ -33,6 +33,19 @@ export const MainLayout = ({ children }) => {
                     </NavLink>
 
                     <NavLink
+                        to="/bms"
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
+                                ? 'bg-primary/10 text-primary border border-primary/20'
+                                : 'text-muted hover:text-text hover:bg-surfaceHighlight'
+                            }`
+                        }
+                    >
+                        <Battery size={20} />
+                        <span>BMS Monitor</span>
+                    </NavLink>
+
+                    <NavLink
                         to="/history"
                         className={({ isActive }) =>
                             `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
@@ -42,7 +55,7 @@ export const MainLayout = ({ children }) => {
                         }
                     >
                         <History size={20} />
-                        <span>History (Demo)</span>
+                        <span>History</span>
                     </NavLink>
                 </nav>
 
