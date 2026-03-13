@@ -3,10 +3,53 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { FileJson, FileSpreadsheet, Download } from 'lucide-react';
 
+// Merge data points by timestamp (group points within a time window)
+// Prefers non-null, non-zero values when merging
+const mergeByTimestamp = (data, windowMs = 100) => {
+    if (!data.length) return [];
+
+    const sorted = [...data].sort((a, b) => a.timestamp - b.timestamp);
+    const merged = [];
+    let current = { ...sorted[0] };
+
+    for (let i = 1; i < sorted.length; i++) {
+        const row = sorted[i];
+        if (Math.abs(row.timestamp - current.timestamp) <= windowMs) {
+            for (const [k, v] of Object.entries(row)) {
+                if (k === 'original' || k === 'id') continue;
+                // Overwrite if current value is missing or zero but new value is real
+                if (v !== undefined && v !== null && v !== 0) {
+                    if (current[k] === undefined || current[k] === null || current[k] === 0) {
+                        current[k] = v;
+                    }
+                }
+            }
+        } else {
+            merged.push(current);
+            current = { ...row };
+        }
+    }
+    merged.push(current);
+    return merged;
+};
+
 export const ExportControls = ({ sessionData, session }) => {
     const handleExportJSON = () => {
-        const rawRows = sessionData.map(d => d.original || d);
-        const blob = new Blob([JSON.stringify(rawRows, null, 2)], {
+        const merged = mergeByTimestamp(sessionData);
+        const rows = merged.map(d => {
+            const values = {};
+            for (const [k, v] of Object.entries(d)) {
+                if (['id', 'session_id', 'timestamp', 'createdAt', 'original'].includes(k)) continue;
+                if (v !== undefined && v !== null) values[k] = v;
+            }
+            return {
+                timestamp: d.timestamp,
+                session_id: d.session_id,
+                createdAt: d.createdAt,
+                ...values
+            };
+        });
+        const blob = new Blob([JSON.stringify(rows, null, 2)], {
             type: "application/json"
         });
         const url = URL.createObjectURL(blob);
@@ -52,44 +95,35 @@ export const ExportControls = ({ sessionData, session }) => {
             IMU_GyroZ: ['IMU_GyroZ', 'imu_gyroz', 'GyroZ', 'gyro_z', 'gz'],
         };
 
-        // Resolve a field value from a merged row using possible key names
         const resolveField = (row, csvCol) => {
             const candidates = FIELD_MAP[csvCol];
-            if (!candidates) return 0;
+            if (!candidates) return null;
             for (const key of candidates) {
                 if (row[key] !== undefined && row[key] !== null) return row[key];
             }
-            return 0;
+            return null;
         };
 
-        // Merge data points by timestamp (group points within 50ms window)
-        const sorted = [...sessionData].sort((a, b) => a.timestamp - b.timestamp);
-        const merged = [];
-        let current = { ...sorted[0] };
+        // Merge data points within 100ms window
+        const merged = mergeByTimestamp(sessionData, 100);
 
-        for (let i = 1; i < sorted.length; i++) {
-            const row = sorted[i];
-            if (Math.abs(row.timestamp - current.timestamp) <= 50) {
-                // Merge fields from same time window
-                for (const [k, v] of Object.entries(row)) {
-                    if (k !== 'original' && k !== 'id' && (current[k] === undefined || current[k] === null)) {
-                        current[k] = v;
-                    }
+        // Fill forward: carry last known value for fields that are still null
+        const lastKnown = {};
+        for (const row of merged) {
+            for (const col of Object.keys(FIELD_MAP)) {
+                const val = resolveField(row, col);
+                if (val !== null && val !== 0) {
+                    lastKnown[col] = val;
                 }
-            } else {
-                merged.push(current);
-                current = { ...row };
             }
         }
-        merged.push(current);
 
-        // Compute SessionTime relative to first timestamp
         const firstTimestamp = merged[0].timestamp;
 
-        // Format number: use fixed decimals matching the reference format
         const fmt = (val, decimals) => {
+            if (val === null || val === undefined) return '';
             const num = Number(val);
-            if (isNaN(num)) return '0.' + '0'.repeat(decimals);
+            if (isNaN(num)) return '';
             return num.toFixed(decimals);
         };
 
@@ -98,24 +132,24 @@ export const ExportControls = ({ sessionData, session }) => {
             const sessionTime = unixTime - firstTimestamp;
 
             return [
-                idx + 1,                                    // DataPoint
-                unixTime,                                   // UnixTime
-                sessionTime,                                // SessionTime
+                idx + 1,
+                unixTime,
+                sessionTime,
                 fmt(resolveField(row, 'Wheel_RPM_Left'), 2),
                 fmt(resolveField(row, 'Wheel_RPM_Right'), 2),
                 fmt(resolveField(row, 'Stroke1_mm'), 2),
                 fmt(resolveField(row, 'Stroke2_mm'), 2),
-                fmt(resolveField(row, 'GPS_Lat'), 4),
-                fmt(resolveField(row, 'GPS_Lng'), 4),
+                fmt(resolveField(row, 'GPS_Lat'), 6),
+                fmt(resolveField(row, 'GPS_Lng'), 6),
                 fmt(resolveField(row, 'GPS_Age'), 2),
                 fmt(resolveField(row, 'GPS_Course'), 2),
                 fmt(resolveField(row, 'GPS_Speed'), 2),
-                fmt(resolveField(row, 'IMU_AccelX'), 3),
-                fmt(resolveField(row, 'IMU_AccelY'), 3),
-                fmt(resolveField(row, 'IMU_AccelZ'), 3),
-                fmt(resolveField(row, 'IMU_GyroX'), 3),
-                fmt(resolveField(row, 'IMU_GyroY'), 3),
-                fmt(resolveField(row, 'IMU_GyroZ'), 3),
+                fmt(resolveField(row, 'IMU_AccelX'), 4),
+                fmt(resolveField(row, 'IMU_AccelY'), 4),
+                fmt(resolveField(row, 'IMU_AccelZ'), 4),
+                fmt(resolveField(row, 'IMU_GyroX'), 4),
+                fmt(resolveField(row, 'IMU_GyroY'), 4),
+                fmt(resolveField(row, 'IMU_GyroZ'), 4),
             ].join(',');
         });
 

@@ -5,8 +5,9 @@ export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
 export const STAT_DELETE_URL = `${BASE_URL}/api/stat/delete`;
 
-export const fetchSessions = async () => {
-    const response = await fetch(API_URL);
+export const fetchSessions = async (since = null) => {
+    const url = since ? `${API_URL}?since=${encodeURIComponent(since)}` : API_URL;
+    const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ControlPanel } from '../components/ControlPanel';
 import { SessionControl } from '../components/SessionControl';
@@ -19,6 +19,21 @@ export const DashboardPage = () => {
     const [error, setError] = useState(null);
     const { activeSession, isRecording } = useSession();
 
+    // Reference time: only show data created after this timestamp
+    // Initialized to page open time, resets on start/stop recording
+    const [sinceTime, setSinceTime] = useState(() => new Date().toISOString());
+    const prevRecordingRef = useRef(isRecording);
+
+    // Reset sinceTime when recording state changes (start or stop)
+    useEffect(() => {
+        if (prevRecordingRef.current !== isRecording) {
+            prevRecordingRef.current = isRecording;
+            const now = new Date().toISOString();
+            setSinceTime(now);
+            setNormalizedData([]);
+        }
+    }, [isRecording]);
+
     // Main Data Processing (no grouping by session, just normalize)
     const processAndSetData = useCallback((data) => {
         try {
@@ -32,11 +47,11 @@ export const DashboardPage = () => {
         }
     }, []);
 
-    // Fetch Function
+    // Fetch Function — only fetch data created after sinceTime
     const loadData = useCallback(async () => {
         try {
             setDebugInfo('Fetching...');
-            const json = await fetchSessions();
+            const json = await fetchSessions(sinceTime);
             setDebugInfo(`Fetched: ${Array.isArray(json) ? json.length : typeof json} items`);
 
             if (Array.isArray(json)) {
@@ -50,7 +65,7 @@ export const DashboardPage = () => {
             setError("Connection Error: " + err.message);
             setDebugInfo('Error: ' + err.message);
         }
-    }, [processAndSetData]);
+    }, [processAndSetData, sinceTime]);
 
     // Auto Update Loop
     useEffect(() => {
