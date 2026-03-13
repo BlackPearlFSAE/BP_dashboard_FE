@@ -70,8 +70,22 @@ export const BMSCellChart = ({ data }) => {
                 borderWidth: 1,
             },
             zoom: {
-                pan: { enabled: true, mode: 'xy' },
-                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
+                pan: { enabled: true, mode: 'x' },
+                zoom: {
+                    wheel: { enabled: true },
+                    pinch: { enabled: true },
+                    mode: 'x',
+                    onZoomComplete: ({ chart }) => {
+                        chart.options.scales.y.min = undefined;
+                        chart.options.scales.y.max = undefined;
+                        chart.update('none');
+                    }
+                },
+                onPanComplete: ({ chart }) => {
+                    chart.options.scales.y.min = undefined;
+                    chart.options.scales.y.max = undefined;
+                    chart.update('none');
+                }
             }
         },
         scales: {
@@ -120,7 +134,7 @@ export const BMSCellChart = ({ data }) => {
         <div className="h-[400px] w-full relative group cursor-crosshair">
             <ReactChart type="line" data={chartData} options={options} />
             <div className="absolute top-4 right-4 text-xs text-muted/50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                Scroll to zoom • Drag to pan
+                Scroll to zoom • Drag to pan timeline
             </div>
         </div>
     );
