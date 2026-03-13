@@ -201,11 +201,17 @@ export const ChartSection = ({ data, groupFilter }) => {
             x: {
                 type: 'time',
                 time: {
-                    unit: 'second',
-                    displayFormats: { second: 'HH:mm:ss' }
+                    displayFormats: {
+                        millisecond: 'HH:mm:ss.SSS',
+                        second: 'HH:mm:ss',
+                        minute: 'HH:mm',
+                        hour: 'MM/dd HH:mm',
+                        day: 'MM/dd',
+                        month: 'yyyy/MM',
+                    }
                 },
                 title: { display: true, text: 'Time', color: textColor, font: { weight: 'bold' } },
-                ticks: { color: textColor },
+                ticks: { color: textColor, maxTicksLimit: 10 },
                 grid: { color: gridColor }
             },
             y: {
