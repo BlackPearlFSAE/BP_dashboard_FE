@@ -4,7 +4,7 @@ import { Button } from './ui/Button';
 import { format, differenceInSeconds } from 'date-fns';
 import { Search, Calendar, Trash2, Database } from 'lucide-react';
 
-export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, onDeleteAllStats, onDeleteUnnamedStats, onDeleteStatsBySession, isLoading }) => {
+export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, onDeleteUnnamedSessions, onDeleteAllStats, onDeleteUnnamedStats, onDeleteStatsBySession, isLoading }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredSessions = useMemo(() => {
@@ -63,6 +63,11 @@ export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, onDelet
                         {filteredSessions.length} of {sessions.length} sessions
                     </p>
                     <div className="flex items-center gap-2">
+                        {onDeleteUnnamedSessions && (
+                            <Button variant="outline" onClick={onDeleteUnnamedSessions} className="text-xs py-1 px-2">
+                                <Trash2 size={14} /> Delete Unnamed Sessions
+                            </Button>
+                        )}
                         {onDeleteUnnamedStats && (
                             <Button variant="outline" onClick={onDeleteUnnamedStats} className="text-xs py-1 px-2">
                                 <Database size={14} /> Delete Undefined Stats

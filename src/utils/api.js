@@ -125,3 +125,10 @@ export const deleteAllSessions = async () => {
     });
     return response.ok;
 };
+
+export const deleteUnnamedSessions = async () => {
+    const response = await fetch(`${SESSION_API_URL}/delete-unnamed`, {
+        method: 'DELETE'
+    });
+    return response.ok;
+};

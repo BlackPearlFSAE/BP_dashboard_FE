@@ -5,7 +5,7 @@ import { SessionList } from '../components/SessionList';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { ExportControls } from '../components/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
+import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions, deleteUnnamedSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
 import { normalizeData } from '../utils/dataProcessor';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { format } from 'date-fns';
@@ -57,6 +57,14 @@ export const HistoryPage = () => {
     const handleDeleteUnnamedStats = async () => {
         if (!window.confirm('Delete all unnamed (undefined) stats? This cannot be undone.')) return;
         await deleteUnnamedStats();
+    };
+
+    const handleDeleteUnnamedSessions = async () => {
+        if (!window.confirm('Delete all unnamed (null) sessions? This cannot be undone.')) return;
+        const success = await deleteUnnamedSessions();
+        if (success) {
+            setSessionList(prev => prev.filter(s => s.name !== null));
+        }
     };
 
     const handleDeleteStatsBySession = async (sessionName) => {
@@ -118,6 +126,7 @@ export const HistoryPage = () => {
                     onSelect={loadSession}
                     onDelete={handleDeleteSession}
                     onDeleteAll={handleDeleteAll}
+                    onDeleteUnnamedSessions={handleDeleteUnnamedSessions}
                     onDeleteAllStats={handleDeleteAllStats}
                     onDeleteUnnamedStats={handleDeleteUnnamedStats}
                     onDeleteStatsBySession={handleDeleteStatsBySession}
