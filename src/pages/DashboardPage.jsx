@@ -8,7 +8,7 @@ import { normalizeData } from '../utils/dataProcessor';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { useSession } from '../context/SessionContext';
 import { Button } from '../components/ui/Button';
-import { Battery, AlertCircle } from 'lucide-react';
+import { Battery, AlertCircle, Circle } from 'lucide-react';
 
 export const DashboardPage = () => {
     const [normalizedData, setNormalizedData] = useState([]);
@@ -62,21 +62,83 @@ export const DashboardPage = () => {
         return () => clearInterval(timer);
     }, [isAutoUpdate, intervalTime, loadData]);
 
+    // Parse CSV into group-based items matching the dashboard's expected format
+    const parseCSV = (text) => {
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const items = [];
+
+        lines.slice(1).forEach((line, idx) => {
+            const vals = line.split(',').map(v => v.trim());
+            const row = {};
+            headers.forEach((h, i) => {
+                row[h] = vals[i] !== undefined && vals[i] !== '' ? Number(vals[i]) : 0;
+            });
+
+            const timestamp = row.UnixTime;
+            const dp = row.DataPoint || (idx + 1);
+
+            // Mechanical group: wheel RPM + suspension stroke
+            items.push({
+                id: `csv_${dp}_mech`,
+                session_id: 'csv_import',
+                createdAt: new Date().toISOString(),
+                data: {
+                    type: 'data',
+                    group: 'rear.mech',
+                    timestamp,
+                    values: {
+                        Wheel_RPM_Left: row.Wheel_RPM_Left,
+                        Wheel_RPM_Right: row.Wheel_RPM_Right,
+                        Stroke1_mm: row.Stroke1_mm,
+                        Stroke2_mm: row.Stroke2_mm,
+                    }
+                }
+            });
+
+            // Odometry group: GPS + IMU
+            items.push({
+                id: `csv_${dp}_odom`,
+                session_id: 'csv_import',
+                createdAt: new Date().toISOString(),
+                data: {
+                    type: 'data',
+                    group: 'rear.odom',
+                    timestamp,
+                    values: {
+                        GPS_Lat: row.GPS_Lat,
+                        GPS_Lng: row.GPS_Lng,
+                        GPS_Age: row.GPS_Age,
+                        GPS_Course: row.GPS_Course,
+                        GPS_Speed: row.GPS_Speed,
+                        IMU_AccelX: row.IMU_AccelX,
+                        IMU_AccelY: row.IMU_AccelY,
+                        IMU_AccelZ: row.IMU_AccelZ,
+                        IMU_GyroX: row.IMU_GyroX,
+                        IMU_GyroY: row.IMU_GyroY,
+                        IMU_GyroZ: row.IMU_GyroZ,
+                    }
+                }
+            });
+        });
+
+        return items;
+    };
+
     // File Upload Handler
     const handleFileUpload = (file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const parsed = JSON.parse(e.target.result);
-                if (!Array.isArray(parsed)) {
-                    alert("File must be a JSON Array");
-                    return;
-                }
-
-                // Validation check similar to original
-                const valid = parsed.every(item => item.data && item.data.session_id !== undefined);
-                if (!valid) {
-                    alert("Invalid JSON structure (missing session_id)"); // Relaxed check
+                let parsed;
+                if (file.name.toLowerCase().endsWith('.csv')) {
+                    parsed = parseCSV(e.target.result);
+                } else {
+                    parsed = JSON.parse(e.target.result);
+                    if (!Array.isArray(parsed)) {
+                        alert("File must be a JSON Array");
+                        return;
+                    }
                 }
 
                 setIsAutoUpdate(false); // Pause auto update to view file
@@ -85,11 +147,60 @@ export const DashboardPage = () => {
                 setTimeout(() => setUploadStatus(''), 3000);
             } catch (err) {
                 console.error(err);
-                alert("Invalid JSON File");
+                alert("Invalid file format");
             }
         };
         reader.readAsText(file);
     };
+
+    // Load mock data for testing
+    const loadMockData = useCallback(() => {
+        const now = Date.now();
+        const items = [];
+        for (let i = 0; i < 100; i++) {
+            const t = now - (100 - i) * 200;
+            const angle = (i / 100) * Math.PI * 4;
+            items.push({
+                id: `mock_${i}_mech`,
+                session_id: 'mock',
+                createdAt: new Date(t).toISOString(),
+                data: {
+                    type: 'data', group: 'rear.mech', timestamp: t,
+                    values: {
+                        Wheel_RPM_Left: Math.max(0, 120 + Math.sin(angle) * 30 + Math.random() * 5),
+                        Wheel_RPM_Right: Math.max(0, 118 + Math.sin(angle + 0.1) * 30 + Math.random() * 5),
+                        Stroke1_mm: 8.5 + Math.sin(angle * 2) * 1.5 + Math.random() * 0.3,
+                        Stroke2_mm: 0.35 + Math.abs(Math.sin(angle * 3)) * 2,
+                    }
+                }
+            });
+            items.push({
+                id: `mock_${i}_odom`,
+                session_id: 'mock',
+                createdAt: new Date(t).toISOString(),
+                data: {
+                    type: 'data', group: 'rear.odom', timestamp: t,
+                    values: {
+                        GPS_Lat: 13.7563 + i * 0.00005,
+                        GPS_Lng: 100.5018 + i * 0.00003,
+                        GPS_Age: 0.1 + Math.random() * 0.5,
+                        GPS_Course: (angle * 30) % 360,
+                        GPS_Speed: 25 + Math.sin(angle) * 5,
+                        IMU_AccelX: Math.sin(angle) * 0.5,
+                        IMU_AccelY: Math.cos(angle) * 0.3,
+                        IMU_AccelZ: 1.0 + Math.random() * 0.02 - 0.01,
+                        IMU_GyroX: Math.sin(angle * 2) * 0.2,
+                        IMU_GyroY: Math.cos(angle * 2) * 0.15,
+                        IMU_GyroZ: Math.sin(angle) * 0.1,
+                    }
+                }
+            });
+        }
+        setIsAutoUpdate(false);
+        processAndSetData(items);
+        setUploadStatus('Mock data loaded');
+        setTimeout(() => setUploadStatus(''), 3000);
+    }, [processAndSetData]);
 
     // Get BMS summary data
     const bmsData = normalizedData.filter(d => {
@@ -135,6 +246,7 @@ export const DashboardPage = () => {
                 setIsAutoUpdate={setIsAutoUpdate}
                 onManualUpdate={loadData}
                 onFileUpload={handleFileUpload}
+                onLoadMock={loadMockData}
                 uploadStatus={uploadStatus}
             />
 

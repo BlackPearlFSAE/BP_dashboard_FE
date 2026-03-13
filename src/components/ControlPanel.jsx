@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Upload, Pause, Play, RefreshCw, Clock } from 'lucide-react';
+import { Upload, Pause, Play, RefreshCw, Clock, FlaskConical } from 'lucide-react';
 
 export const ControlPanel = ({
     interval,
@@ -10,6 +10,7 @@ export const ControlPanel = ({
     setIsAutoUpdate,
     onManualUpdate,
     onFileUpload,
+    onLoadMock,
     uploadStatus
 }) => {
     const fileInputRef = useRef(null);
@@ -56,14 +57,18 @@ export const ControlPanel = ({
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
-                            accept=".json"
+                            accept=".json,.csv"
                             onChange={handleFileChange}
                         />
                         <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                            <Upload size={16} /> Import JSON
+                            <Upload size={16} /> Import JSON/CSV
                         </Button>
                         {uploadStatus && <span className="text-xs text-green-400 animate-pulse">{uploadStatus}</span>}
                     </div>
+
+                    <Button variant="outline" onClick={onLoadMock}>
+                        <FlaskConical size={16} /> Mock Data
+                    </Button>
 
                     <div className="h-6 w-px bg-white/10 mx-2"></div>
 

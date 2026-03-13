@@ -38,8 +38,10 @@ export const TableSection = ({ data, groupFilter }) => {
         });
     }, [data, filterTopic, sortOrder]);
 
+    const META_KEYS = new Set(['id', 'session_id', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'latitude', 'longitude']);
+
     const formatValue = (item) => {
-        // Check for values object
+        // Old format: explicit value fields
         if (item['values.x'] !== undefined) {
             return `X: ${item['values.x']?.toFixed(3)}, Y: ${item['values.y']?.toFixed(3)}, Z: ${item['values.z']?.toFixed(3)}`;
         }
@@ -49,7 +51,12 @@ export const TableSection = ({ data, groupFilter }) => {
         if (item.latitude !== undefined) {
             return `Lat: ${item.latitude.toFixed(6)}, Lng: ${item.longitude.toFixed(6)}`;
         }
-        return JSON.stringify(item.original?.data?.data || '').slice(0, 50);
+        // New group-based format: show all numeric fields
+        const fields = Object.entries(item)
+            .filter(([k, v]) => !META_KEYS.has(k) && typeof v === 'number')
+            .map(([k, v]) => `${k}: ${v.toFixed(3)}`);
+        if (fields.length > 0) return fields.slice(0, 4).join(' | ');
+        return JSON.stringify(item.original?.data?.values || item.original?.data?.data || '').slice(0, 60);
     };
 
     return (
@@ -93,7 +100,7 @@ export const TableSection = ({ data, groupFilter }) => {
                                     {format(row.timestamp, 'HH:mm:ss.SS')}
                                 </td>
                                 <td className="p-2 text-primary font-bold whitespace-nowrap break-all">
-                                    {row.topic_name}
+                                    {row.topic_name || row.original?.data?.group || '—'}
                                 </td>
                                 <td className="p-2 text-text font-medium break-all">
                                     {formatValue(row)}

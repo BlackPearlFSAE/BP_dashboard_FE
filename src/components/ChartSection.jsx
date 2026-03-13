@@ -50,7 +50,7 @@ export const ChartSection = ({ data, groupFilter }) => {
                 const group = d.original?.data?.group;
                 if (!groupFilter || groupFilter.includes(group)) {
                     Object.keys(d).forEach(key => {
-                        if (!['id', 'session_id', 'timestamp', 'original', 'latitude', 'longitude'].includes(key)) {
+                        if (!['id', 'session_id', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'latitude', 'longitude'].includes(key) && typeof d[key] === 'number') {
                             t.add(key);
                         }
                     });
@@ -64,19 +64,33 @@ export const ChartSection = ({ data, groupFilter }) => {
 
     // Prepare chart data
     const chartData = useMemo(() => {
-        const filtered = data.filter(d => d.topic_name === selectedTopic);
+        const commonDataset = { borderWidth: 2, pointRadius: 2, tension: 0.1 };
 
-        // Sort by timestamp
-        filtered.sort((a, b) => a.timestamp - b.timestamp);
+        // New group-based format: selectedTopic is a direct numeric field on each item
+        const isDirectField = data.some(d => typeof d[selectedTopic] === 'number');
+        if (isDirectField) {
+            const filtered = data
+                .filter(d => typeof d[selectedTopic] === 'number')
+                .sort((a, b) => a.timestamp - b.timestamp);
+            return {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        ...commonDataset,
+                        label: selectedTopic,
+                        data: filtered.map(d => ({ x: d.timestamp, y: d[selectedTopic] })),
+                        borderColor: '#FF6b00',
+                        backgroundColor: '#FF6b00',
+                    }]
+                }
+            };
+        }
 
-        // Common styling
-        const commonDataset = {
-            borderWidth: 2,
-            pointRadius: 2,
-            tension: 0.1,
-        };
+        // Old topic-name format
+        const filtered = data
+            .filter(d => d.topic_name === selectedTopic)
+            .sort((a, b) => a.timestamp - b.timestamp);
 
-        // Case 1: GPS (Scatter)
         if (selectedTopic === 'gps/location') {
             return {
                 type: 'scatter',
@@ -84,12 +98,8 @@ export const ChartSection = ({ data, groupFilter }) => {
                     datasets: [{
                         ...commonDataset,
                         label: 'GPS Path',
-                        data: filtered.map(d => ({
-                            x: d.longitude, // Longitude as X
-                            y: d.latitude,  // Latitude as Y
-                            timestamp: d.timestamp // Store for tooltip
-                        })),
-                        borderColor: '#FF6b00', // primary (Orange)
+                        data: filtered.map(d => ({ x: d.longitude, y: d.latitude, timestamp: d.timestamp })),
+                        borderColor: '#FF6b00',
                         backgroundColor: '#FF6b00',
                         showLine: true
                     }]
@@ -97,18 +107,13 @@ export const ChartSection = ({ data, groupFilter }) => {
             };
         }
 
-        // Case 2: Standard Time Series
-        // Check data structure of first item to determine sub-keys (e.g. values.x, values.y or just value)
         const firstPayload = filtered[0] || {};
         let datasets = [];
-
-        // Heuristics for value extraction
         if (firstPayload['values.x'] !== undefined) {
-            // 3-axis data (IMU etc)
             datasets = [
-                { label: 'X', key: 'values.x', color: '#FF2400' }, // accent (Red-Orange)
-                { label: 'Y', key: 'values.y', color: '#FF6b00' }, // primary (Orange)
-                { label: 'Z', key: 'values.z', color: '#FFA500' }, // secondary (Yellow)
+                { label: 'X', key: 'values.x', color: '#FF2400' },
+                { label: 'Y', key: 'values.y', color: '#FF6b00' },
+                { label: 'Z', key: 'values.z', color: '#FFA500' },
             ].map(axis => ({
                 ...commonDataset,
                 label: `${selectedTopic} (${axis.label})`,
@@ -117,7 +122,6 @@ export const ChartSection = ({ data, groupFilter }) => {
                 backgroundColor: axis.color,
             }));
         } else if (firstPayload.value !== undefined) {
-            // Single value
             datasets = [{
                 ...commonDataset,
                 label: selectedTopic,
@@ -126,7 +130,6 @@ export const ChartSection = ({ data, groupFilter }) => {
                 backgroundColor: '#FF6b00',
             }];
         } else {
-            // Fallback: Try to find any number
             const key = Object.keys(firstPayload).find(k => typeof firstPayload[k] === 'number' && k !== 'timestamp' && k !== 'session_id');
             if (key) {
                 datasets = [{
@@ -138,11 +141,7 @@ export const ChartSection = ({ data, groupFilter }) => {
                 }];
             }
         }
-
-        return {
-            type: 'line',
-            data: { datasets }
-        };
+        return { type: 'line', data: { datasets } };
 
     }, [data, selectedTopic]);
 
