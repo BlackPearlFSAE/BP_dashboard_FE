@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { Card } from './ui/Card';
+import { Button } from './ui/Button';
 import { format, differenceInSeconds } from 'date-fns';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, Trash2 } from 'lucide-react';
 
-export const SessionList = ({ sessions, onSelect, isLoading }) => {
+export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, isLoading }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredSessions = useMemo(() => {
@@ -40,15 +41,22 @@ export const SessionList = ({ sessions, onSelect, isLoading }) => {
         <div className="space-y-4">
             {/* Search Bar */}
             <Card className="p-4">
-                <div className="relative">
-                    <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                    <input
-                        type="text"
-                        placeholder="Search sessions by name or ID..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded text-text placeholder-muted focus:border-primary outline-none transition-colors"
-                    />
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                        <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                        <input
+                            type="text"
+                            placeholder="Search sessions by name or ID..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded text-text placeholder-muted focus:border-primary outline-none transition-colors"
+                        />
+                    </div>
+                    {onDeleteAll && sessions.length > 0 && (
+                        <Button variant="danger" onClick={onDeleteAll}>
+                            <Trash2 size={16} /> Delete All
+                        </Button>
+                    )}
                 </div>
                 <p className="text-xs text-muted mt-2">
                     {filteredSessions.length} of {sessions.length} sessions
@@ -67,6 +75,7 @@ export const SessionList = ({ sessions, onSelect, isLoading }) => {
                             key={session.session_id}
                             session={session}
                             onClick={() => onSelect(session.session_id)}
+                            onDelete={onDelete ? () => onDelete(session.session_id) : null}
                         />
                     ))
                 )}
@@ -75,7 +84,9 @@ export const SessionList = ({ sessions, onSelect, isLoading }) => {
     );
 };
 
-const SessionListItem = ({ session, onClick }) => {
+const SessionListItem = ({ session, onClick, onDelete }) => {
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const duration = differenceInSeconds(
         new Date(session.end_time),
         new Date(session.start_time)
@@ -88,6 +99,14 @@ const SessionListItem = ({ session, onClick }) => {
         if (h > 0) return `${h}h ${m}m ${s}s`;
         if (m > 0) return `${m}m ${s}s`;
         return `${s}s`;
+    };
+
+    const handleDelete = async (e) => {
+        e.stopPropagation();
+        if (!window.confirm(`Delete session "${session.name || session.session_id.slice(0, 8)}"?`)) return;
+        setIsDeleting(true);
+        await onDelete();
+        setIsDeleting(false);
     };
 
     return (
@@ -107,13 +126,25 @@ const SessionListItem = ({ session, onClick }) => {
                         ID: {session.session_id}
                     </p>
                 </div>
-                <div className="text-right">
-                    <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-bold">
-                        {session.data_point_count.toLocaleString()} pts
+                <div className="flex items-center gap-3">
+                    <div className="text-right">
+                        <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-bold">
+                            {session.data_point_count.toLocaleString()} pts
+                        </div>
+                        <p className="text-sm text-muted mt-2">
+                            Duration: {formatDuration(duration)}
+                        </p>
                     </div>
-                    <p className="text-sm text-muted mt-2">
-                        Duration: {formatDuration(duration)}
-                    </p>
+                    {onDelete && (
+                        <Button
+                            variant="danger"
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="ml-2"
+                        >
+                            <Trash2 size={16} />
+                        </Button>
+                    )}
                 </div>
             </div>
         </Card>

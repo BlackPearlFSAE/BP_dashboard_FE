@@ -5,7 +5,7 @@ import { SessionList } from '../components/SessionList';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { ExportControls } from '../components/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { getSessionList, getSessionData } from '../utils/api';
+import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions } from '../utils/api';
 import { normalizeData } from '../utils/dataProcessor';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { format } from 'date-fns';
@@ -31,6 +31,21 @@ export const HistoryPage = () => {
             console.error('[HISTORY] Failed to load session list:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleDeleteSession = async (session_id) => {
+        const success = await deleteSessionById(session_id);
+        if (success) {
+            setSessionList(prev => prev.filter(s => s.session_id !== session_id));
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        if (!window.confirm(`Delete all ${sessionList.length} sessions? This cannot be undone.`)) return;
+        const success = await deleteAllSessions();
+        if (success) {
+            setSessionList([]);
         }
     };
 
@@ -86,6 +101,8 @@ export const HistoryPage = () => {
                 <SessionList
                     sessions={sessionList}
                     onSelect={loadSession}
+                    onDelete={handleDeleteSession}
+                    onDeleteAll={handleDeleteAll}
                     isLoading={isLoading}
                 />
             ) : (

@@ -1,6 +1,6 @@
 // Use relative path for proxy in development, absolute for production if needed
 const isDev = import.meta.env.DEV;
-const BASE_URL = isDev ? "" : "https://blackpearl-ws.onrender.com";
+const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
 export const DELETE_URL = isDev ? "/api/stat/delete-session" : "https://mctrl.kmutt.ac.th/ken-api/api/stat/delete-session";
@@ -92,6 +92,13 @@ export const renameSession = async (session_id, name) => {
 
 export const deleteSessionById = async (session_id) => {
     const response = await fetch(`${SESSION_API_URL}/${session_id}`, {
+        method: 'DELETE'
+    });
+    return response.ok;
+};
+
+export const deleteAllSessions = async () => {
+    const response = await fetch(`${SESSION_API_URL}/delete-all`, {
         method: 'DELETE'
     });
     return response.ok;
