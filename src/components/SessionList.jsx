@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { format, differenceInSeconds } from 'date-fns';
-import { Search, Calendar, Trash2 } from 'lucide-react';
+import { Search, Calendar, Trash2, Database } from 'lucide-react';
 
-export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, isLoading }) => {
+export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, onDeleteAllStats, onDeleteUnnamedStats, onDeleteStatsBySession, isLoading }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredSessions = useMemo(() => {
@@ -54,13 +54,27 @@ export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, isLoadi
                     </div>
                     {onDeleteAll && sessions.length > 0 && (
                         <Button variant="danger" onClick={onDeleteAll}>
-                            <Trash2 size={16} /> Delete All
+                            <Trash2 size={16} /> Delete All Sessions
                         </Button>
                     )}
                 </div>
-                <p className="text-xs text-muted mt-2">
-                    {filteredSessions.length} of {sessions.length} sessions
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-muted">
+                        {filteredSessions.length} of {sessions.length} sessions
+                    </p>
+                    <div className="flex items-center gap-2">
+                        {onDeleteUnnamedStats && (
+                            <Button variant="outline" onClick={onDeleteUnnamedStats} className="text-xs py-1 px-2">
+                                <Database size={14} /> Delete Undefined Stats
+                            </Button>
+                        )}
+                        {onDeleteAllStats && (
+                            <Button variant="danger" onClick={onDeleteAllStats} className="text-xs py-1 px-2">
+                                <Database size={14} /> Delete All Stats
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </Card>
 
             {/* Session List */}
@@ -76,6 +90,7 @@ export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, isLoadi
                             session={session}
                             onClick={() => onSelect(session.session_id)}
                             onDelete={onDelete ? () => onDelete(session.session_id) : null}
+                            onDeleteStats={onDeleteStatsBySession && session.name ? () => onDeleteStatsBySession(session.name) : null}
                         />
                     ))
                 )}
@@ -84,7 +99,7 @@ export const SessionList = ({ sessions, onSelect, onDelete, onDeleteAll, isLoadi
     );
 };
 
-const SessionListItem = ({ session, onClick, onDelete }) => {
+const SessionListItem = ({ session, onClick, onDelete, onDeleteStats }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const duration = differenceInSeconds(
@@ -135,12 +150,23 @@ const SessionListItem = ({ session, onClick, onDelete }) => {
                             Duration: {formatDuration(duration)}
                         </p>
                     </div>
+                    {onDeleteStats && (
+                        <Button
+                            variant="outline"
+                            onClick={(e) => { e.stopPropagation(); onDeleteStats(); }}
+                            className="ml-1"
+                            title="Delete stats data"
+                        >
+                            <Database size={14} />
+                        </Button>
+                    )}
                     {onDelete && (
                         <Button
                             variant="danger"
                             onClick={handleDelete}
                             disabled={isDeleting}
-                            className="ml-2"
+                            className="ml-1"
+                            title="Delete session"
                         >
                             <Trash2 size={16} />
                         </Button>

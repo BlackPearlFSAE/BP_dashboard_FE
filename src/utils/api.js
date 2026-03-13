@@ -3,7 +3,7 @@ const isDev = import.meta.env.DEV;
 const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
-export const DELETE_URL = isDev ? "/api/stat/delete-session" : "https://mctrl.kmutt.ac.th/ken-api/api/stat/delete-session";
+export const STAT_DELETE_URL = `${BASE_URL}/api/stat/delete`;
 
 export const fetchSessions = async () => {
     const response = await fetch(API_URL);
@@ -13,14 +13,36 @@ export const fetchSessions = async () => {
     return await response.json();
 };
 
-export const deleteSession = async (sessionId, experimentId) => {
+export const deleteStatsByName = async (session_name) => {
     try {
-        const response = await fetch(DELETE_URL, {
+        const response = await fetch(STAT_DELETE_URL, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ session_id: sessionId, experiment_id: experimentId })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_name })
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Delete Error:", error);
+        return false;
+    }
+};
+
+export const deleteUnnamedStats = async () => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/stat/delete-unnamed`, {
+            method: 'DELETE'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Delete Error:", error);
+        return false;
+    }
+};
+
+export const deleteAllStats = async () => {
+    try {
+        const response = await fetch(`${BASE_URL}/api/stat/delete-all`, {
+            method: 'DELETE'
         });
         return response.ok;
     } catch (error) {

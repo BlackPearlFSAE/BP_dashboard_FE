@@ -5,7 +5,7 @@ import { SessionList } from '../components/SessionList';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { ExportControls } from '../components/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions } from '../utils/api';
+import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
 import { normalizeData } from '../utils/dataProcessor';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { format } from 'date-fns';
@@ -47,6 +47,21 @@ export const HistoryPage = () => {
         if (success) {
             setSessionList([]);
         }
+    };
+
+    const handleDeleteAllStats = async () => {
+        if (!window.confirm('Delete ALL stats from database? This cannot be undone.')) return;
+        await deleteAllStats();
+    };
+
+    const handleDeleteUnnamedStats = async () => {
+        if (!window.confirm('Delete all unnamed (undefined) stats? This cannot be undone.')) return;
+        await deleteUnnamedStats();
+    };
+
+    const handleDeleteStatsBySession = async (sessionName) => {
+        if (!window.confirm(`Delete all stats for session "${sessionName}"?`)) return;
+        await deleteStatsByName(sessionName);
     };
 
     const loadSession = async (session_id) => {
@@ -103,6 +118,9 @@ export const HistoryPage = () => {
                     onSelect={loadSession}
                     onDelete={handleDeleteSession}
                     onDeleteAll={handleDeleteAll}
+                    onDeleteAllStats={handleDeleteAllStats}
+                    onDeleteUnnamedStats={handleDeleteUnnamedStats}
+                    onDeleteStatsBySession={handleDeleteStatsBySession}
                     isLoading={isLoading}
                 />
             ) : (
