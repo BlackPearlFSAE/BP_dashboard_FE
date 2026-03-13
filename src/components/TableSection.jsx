@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { ChevronUp, ChevronDown, Filter } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 export const TableSection = ({ data, groupFilter }) => {
     const [filterTopic, setFilterTopic] = useState('all');
@@ -60,7 +60,7 @@ export const TableSection = ({ data, groupFilter }) => {
     };
 
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full flex flex-col">
             <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
                 <h3 className="text-lg font-bold text-primary flex items-center gap-2">
                     <span className="text-muted/70">RAW DATA</span>
@@ -84,7 +84,7 @@ export const TableSection = ({ data, groupFilter }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto border border-border rounded-lg bg-surface/30">
+            <div className="overflow-y-auto max-h-100 border border-border rounded-lg bg-surface/30">
                 <table className="w-full text-left text-xs">
                     <thead className="bg-surface sticky top-0 z-10 shadow-sm">
                         <tr>

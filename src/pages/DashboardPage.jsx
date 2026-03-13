@@ -262,7 +262,7 @@ export const DashboardPage = () => {
             )}
 
             {/* Data Group Panels */}
-            <div className="overflow-y-auto max-h-[80vh] pr-1 space-y-6">
+            <div className="space-y-6">
                 <DataGroupPanel {...DATA_GROUPS.MECHANICAL} data={normalizedData} />
                 <DataGroupPanel {...DATA_GROUPS.ODOMETRY} data={normalizedData} />
                 <DataGroupPanel {...DATA_GROUPS.ELECTRICAL} data={normalizedData} />

@@ -31,18 +31,18 @@ export const DataGroupPanel = ({ title, groups, data, icon, description }) => {
             </div>
 
             {filteredData.length === 0 ? (
-                <div className="flex items-center justify-center h-[400px] text-muted">
+                <div className="flex items-center justify-center h-100 text-muted">
                     <div className="text-center">
                         <p className="text-lg mb-2">No data available</p>
                         <p className="text-sm">Waiting for telemetry data...</p>
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
-                    <div className="min-h-0">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div>
                         <ChartSection data={filteredData} groupFilter={groups} />
                     </div>
-                    <div className="min-h-0">
+                    <div>
                         <TableSection data={filteredData} groupFilter={groups} />
                     </div>
                 </div>
