@@ -56,6 +56,13 @@ export const flattenObject = (obj, prefix = "", res = {}) => {
     return res;
 };
 
+// Sanitize a raw timestamp: if it looks like a session-relative value (< 1 trillion ms,
+// i.e. before year 2001) fall back to the record's createdAt unix time.
+const sanitizeTimestamp = (raw, createdAt) => {
+    if (raw && raw > 1e12) return raw;
+    return new Date(createdAt).getTime();
+};
+
 // Normalize data item to a standard structure
 export const normalizeData = (item) => {
     // Handle new group-based format
@@ -63,7 +70,7 @@ export const normalizeData = (item) => {
         const meta = {
             id: item.id,
             session_id: item.session_id, // Now at top level in Stat model
-            timestamp: item.data.timestamp,
+            timestamp: sanitizeTimestamp(item.data.timestamp, item.createdAt),
             createdAt: item.createdAt,
             original: item
         };
@@ -76,12 +83,13 @@ export const normalizeData = (item) => {
     }
 
     // Handle old topic-based format (backward compatibility)
+    const rawTs = item.data?.data?.timestamp ?? item.data?.timestamp;
     const meta = {
         id: item.id,
         session_id: item.data?.session_id,
         experiment_id: item.data?.experiment_id,
         topic_name: item.data?.topic_name || item.data?.topic,
-        timestamp: item.data?.data?.timestamp ?? item.data?.timestamp ?? new Date(item.createdAt).getTime(),
+        timestamp: sanitizeTimestamp(rawTs, item.createdAt),
         createdAt: item.createdAt,
         original: item
     };
