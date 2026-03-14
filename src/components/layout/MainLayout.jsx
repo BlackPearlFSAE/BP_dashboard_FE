@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Battery, History, Settings, Menu, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Cog, Zap, Battery, MapPin, History, Settings, Menu, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export const MainLayout = ({ children }) => {
@@ -17,46 +17,30 @@ export const MainLayout = ({ children }) => {
                     <p className="text-xs text-muted mt-1 tracking-widest uppercase">Racing Telemetry</p>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
-                    <NavLink
-                        to="/"
-                        end
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
-                                ? 'bg-primary/10 text-primary border border-primary/20'
-                                : 'text-muted hover:text-text hover:bg-surfaceHighlight'
-                            }`
-                        }
-                    >
-                        <LayoutDashboard size={20} />
-                        <span>Dashboard</span>
-                    </NavLink>
-
-                    <NavLink
-                        to="/bms"
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
-                                ? 'bg-primary/10 text-primary border border-primary/20'
-                                : 'text-muted hover:text-text hover:bg-surfaceHighlight'
-                            }`
-                        }
-                    >
-                        <Battery size={20} />
-                        <span>BMS Monitor</span>
-                    </NavLink>
-
-                    <NavLink
-                        to="/history"
-                        className={({ isActive }) =>
-                            `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
-                                ? 'bg-primary/10 text-primary border border-primary/20'
-                                : 'text-muted hover:text-text hover:bg-surfaceHighlight'
-                            }`
-                        }
-                    >
-                        <History size={20} />
-                        <span>History</span>
-                    </NavLink>
+                <nav className="flex-1 p-4 space-y-1">
+                    {[
+                        { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+                        { to: '/mechanical', icon: Cog, label: 'Mechanical' },
+                        { to: '/electrical', icon: Zap, label: 'Electrical' },
+                        { to: '/bms', icon: Battery, label: 'BMS' },
+                        { to: '/odometry', icon: MapPin, label: 'Odometry' },
+                        { to: '/history', icon: History, label: 'History' },
+                    ].map(({ to, icon: Icon, label, end }) => (
+                        <NavLink
+                            key={to}
+                            to={to}
+                            end={end}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${isActive
+                                    ? 'bg-primary/10 text-primary border border-primary/20'
+                                    : 'text-muted hover:text-text hover:bg-surfaceHighlight'
+                                }`
+                            }
+                        >
+                            <Icon size={20} />
+                            <span>{label}</span>
+                        </NavLink>
+                    ))}
                 </nav>
 
                 <div className="p-4 border-t border-border space-y-2">

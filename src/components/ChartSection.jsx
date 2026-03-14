@@ -18,6 +18,7 @@ import zoomPlugin from 'chartjs-plugin-zoom';
 import { format } from 'date-fns';
 import 'chartjs-adapter-date-fns';
 import { useTheme } from '../context/ThemeContext';
+import { displayName } from '../constants/sensorDisplayNames';
 
 // Register ChartJS components
 ChartJS.register(
@@ -77,7 +78,7 @@ export const ChartSection = ({ data, groupFilter }) => {
                 data: {
                     datasets: [{
                         ...commonDataset,
-                        label: selectedTopic,
+                        label: displayName(selectedTopic),
                         data: filtered.map(d => ({ x: d.timestamp, y: d[selectedTopic] })),
                         borderColor: '#FF6b00',
                         backgroundColor: '#FF6b00',
@@ -116,7 +117,7 @@ export const ChartSection = ({ data, groupFilter }) => {
                 { label: 'Z', key: 'values.z', color: '#FFA500' },
             ].map(axis => ({
                 ...commonDataset,
-                label: `${selectedTopic} (${axis.label})`,
+                label: `${displayName(selectedTopic)} (${axis.label})`,
                 data: filtered.map(d => ({ x: d.timestamp, y: d[axis.key] })),
                 borderColor: axis.color,
                 backgroundColor: axis.color,
@@ -124,7 +125,7 @@ export const ChartSection = ({ data, groupFilter }) => {
         } else if (firstPayload.value !== undefined) {
             datasets = [{
                 ...commonDataset,
-                label: selectedTopic,
+                label: displayName(selectedTopic),
                 data: filtered.map(d => ({ x: d.timestamp, y: d.value })),
                 borderColor: '#FF6b00',
                 backgroundColor: '#FF6b00',
@@ -134,7 +135,7 @@ export const ChartSection = ({ data, groupFilter }) => {
             if (key) {
                 datasets = [{
                     ...commonDataset,
-                    label: `${selectedTopic} (${key})`,
+                    label: `${displayName(selectedTopic)} (${key})`,
                     data: filtered.map(d => ({ x: d.timestamp, y: d[key] })),
                     borderColor: '#FF6b00',
                     backgroundColor: '#FF6b00',
@@ -246,14 +247,14 @@ export const ChartSection = ({ data, groupFilter }) => {
         <div className="w-full space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-4">
                 <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                    <span className="text-muted/70">DATA VISUALIZATION</span> // {selectedTopic.toUpperCase()}
+                    <span className="text-muted/70">DATA VISUALIZATION</span> // {displayName(selectedTopic).toUpperCase()}
                 </h3>
                 <select
                     className="bg-surface border border-border rounded px-3 py-1 text-sm text-text focus:border-primary outline-none max-w-[100px] truncate transition-colors duration-300"
                     value={selectedTopic}
                     onChange={(e) => setSelectedTopic(e.target.value)}
                 >
-                    {topics.map(t => <option key={t} value={t}>{t}</option>)}
+                    {topics.map(t => <option key={t} value={t}>{displayName(t)}</option>)}
                 </select>
             </div>
 

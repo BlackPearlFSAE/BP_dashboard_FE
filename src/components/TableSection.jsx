@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { displayName } from '../constants/sensorDisplayNames';
 
 export const TableSection = ({ data, groupFilter }) => {
     const [filterTopic, setFilterTopic] = useState('all');
@@ -54,7 +55,7 @@ export const TableSection = ({ data, groupFilter }) => {
         // New group-based format: show all numeric fields
         const fields = Object.entries(item)
             .filter(([k, v]) => !META_KEYS.has(k) && typeof v === 'number')
-            .map(([k, v]) => `${k}: ${v.toFixed(3)}`);
+            .map(([k, v]) => `${displayName(k)}: ${v.toFixed(3)}`);
         if (fields.length > 0) return fields.slice(0, 4).join(' | ');
         return JSON.stringify(item.original?.data?.values || item.original?.data?.data || '').slice(0, 60);
     };

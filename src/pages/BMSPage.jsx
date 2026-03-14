@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
-import { fetchSessions } from '../utils/api';
 import { normalizeData } from '../utils/dataProcessor';
+import { createTelemetrySocket } from '../utils/websocket';
 import { BMU_UNITS } from '../constants/dataGroups';
 import { BMSCellChart } from '../components/bms/BMSCellChart';
 import { BMSTempChart } from '../components/bms/BMSTempChart';
@@ -9,37 +9,36 @@ import { BMSFaultTable } from '../components/bms/BMSFaultTable';
 import { TableSection } from '../components/TableSection';
 
 export const BMSPage = () => {
-    const [rawData, setRawData] = useState([]);
+    const [normalizedData, setNormalizedData] = useState([]);
     const [selectedBMU, setSelectedBMU] = useState('bmu0');
     const [isLoading, setIsLoading] = useState(true);
+    const dataBufferRef = useRef([]);
 
-    // Poll for BMS data
+    // WebSocket connection for live BMS data
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const data = await fetchSessions();
-                setRawData(data);
-                setIsLoading(false);
-            } catch (error) {
-                console.error('[BMS] Failed to fetch data:', error);
-                setIsLoading(false);
-            }
-        };
-
-        loadData();
-        const interval = setInterval(loadData, 2000);
-
-        return () => clearInterval(interval);
+        const cleanup = createTelemetrySocket(
+            (message) => {
+                try {
+                    const normalized = normalizeData(message);
+                    dataBufferRef.current = [...dataBufferRef.current, normalized].slice(-500);
+                    setNormalizedData([...dataBufferRef.current]);
+                    setIsLoading(false);
+                } catch (err) {
+                    console.error('[BMS] WS Processing Error:', err);
+                }
+            },
+            () => {}
+        );
+        return cleanup;
     }, []);
 
-    // Filter and normalize BMS data for selected BMU
+    // Filter BMS data for selected BMU
     const bmuData = useMemo(() => {
-        const normalized = rawData.map(normalizeData);
-        return normalized.filter(d => {
+        return normalizedData.filter(d => {
             const group = d.original?.data?.group;
             return group && group.startsWith(selectedBMU);
         });
-    }, [rawData, selectedBMU]);
+    }, [normalizedData, selectedBMU]);
 
     const cellsData = useMemo(() => {
         return bmuData.filter(d => d.original?.data?.group?.includes('.cells'));
