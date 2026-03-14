@@ -15,6 +15,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/ws': {
+        target: 'https://mctrl.kmutt.ac.th/ken-api',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
     },
   },
 })

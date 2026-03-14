@@ -3,79 +3,51 @@ import { Link } from 'react-router-dom';
 import { ControlPanel } from '../components/ControlPanel';
 import { SessionControl } from '../components/SessionControl';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { fetchSessions } from '../utils/api';
 import { normalizeData } from '../utils/dataProcessor';
+import { createTelemetrySocket } from '../utils/websocket';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { useSession } from '../context/SessionContext';
 import { Button } from '../components/ui/Button';
-import { Battery, AlertCircle, Circle } from 'lucide-react';
+import { Battery, AlertCircle, Circle, Wifi, WifiOff } from 'lucide-react';
 
 export const DashboardPage = () => {
     const [normalizedData, setNormalizedData] = useState([]);
-    const [intervalTime, setIntervalTime] = useState(2); // Seconds
-    const [isAutoUpdate, setIsAutoUpdate] = useState(true);
+    const [maxDataPoints, setMaxDataPoints] = useState(500);
     const [uploadStatus, setUploadStatus] = useState('');
-    const [debugInfo, setDebugInfo] = useState('Initializing...');
+    const [wsStatus, setWsStatus] = useState('connecting');
     const [error, setError] = useState(null);
     const { activeSession, isRecording } = useSession();
 
-    // Reference time: only show data created after this timestamp
-    // Initialized to page open time, resets on start/stop recording
-    const [sinceTime, setSinceTime] = useState(() => new Date().toISOString());
+    // Buffer for incoming WS data — append and cap at maxDataPoints
+    const dataBufferRef = useRef([]);
     const prevRecordingRef = useRef(isRecording);
 
-    // Reset sinceTime when recording state changes (start or stop)
+    // Reset data when recording state changes (start or stop)
     useEffect(() => {
         if (prevRecordingRef.current !== isRecording) {
             prevRecordingRef.current = isRecording;
-            const now = new Date().toISOString();
-            setSinceTime(now);
+            dataBufferRef.current = [];
             setNormalizedData([]);
         }
     }, [isRecording]);
 
-    // Main Data Processing (no grouping by session, just normalize)
-    const processAndSetData = useCallback((data) => {
-        try {
-            // Normalize mapping only
-            const normalized = data.map(item => normalizeData(item));
-            setNormalizedData(normalized);
-            setError(null);
-        } catch (err) {
-            console.error("Processing Error:", err);
-            setError("Failed to process data: " + err.message);
-        }
-    }, []);
-
-    // Fetch Function — only fetch data created after sinceTime
-    const loadData = useCallback(async () => {
-        try {
-            setDebugInfo('Fetching...');
-            const json = await fetchSessions(sinceTime);
-            setDebugInfo(`Fetched: ${Array.isArray(json) ? json.length : typeof json} items`);
-
-            if (Array.isArray(json)) {
-                processAndSetData(json);
-            } else {
-                console.warn("API returned non-array:", json);
-                if (!json) setError("API returned no data (null/undefined)");
-            }
-        } catch (err) {
-            console.error("Load Error:", err);
-            setError("Connection Error: " + err.message);
-            setDebugInfo('Error: ' + err.message);
-        }
-    }, [processAndSetData, sinceTime]);
-
-    // Auto Update Loop
+    // WebSocket connection for live telemetry
     useEffect(() => {
-        let timer;
-        if (isAutoUpdate) {
-            loadData(); // Initial immediate load
-            timer = setInterval(loadData, intervalTime * 1000);
-        }
-        return () => clearInterval(timer);
-    }, [isAutoUpdate, intervalTime, loadData]);
+        const cleanup = createTelemetrySocket(
+            (message) => {
+                try {
+                    const normalized = normalizeData(message);
+                    dataBufferRef.current = [...dataBufferRef.current, normalized].slice(-maxDataPoints);
+                    setNormalizedData([...dataBufferRef.current]);
+                    setError(null);
+                } catch (err) {
+                    console.error("WS Processing Error:", err);
+                }
+            },
+            (status) => setWsStatus(status)
+        );
+        return cleanup;
+    }, [maxDataPoints]);
 
     // Parse CSV into group-based items matching the dashboard's expected format
     const parseCSV = (text) => {
@@ -140,6 +112,19 @@ export const DashboardPage = () => {
         return items;
     };
 
+    // Process and set data from file/mock (replaces live buffer)
+    const processAndSetData = useCallback((data) => {
+        try {
+            const normalized = data.map(item => normalizeData(item));
+            dataBufferRef.current = normalized;
+            setNormalizedData(normalized);
+            setError(null);
+        } catch (err) {
+            console.error("Processing Error:", err);
+            setError("Failed to process data: " + err.message);
+        }
+    }, []);
+
     // File Upload Handler
     const handleFileUpload = (file) => {
         const reader = new FileReader();
@@ -156,7 +141,6 @@ export const DashboardPage = () => {
                     }
                 }
 
-                setIsAutoUpdate(false); // Pause auto update to view file
                 processAndSetData(parsed);
                 setUploadStatus(`Loaded ${parsed.length} records`);
                 setTimeout(() => setUploadStatus(''), 3000);
@@ -211,7 +195,6 @@ export const DashboardPage = () => {
                 }
             });
         }
-        setIsAutoUpdate(false);
         processAndSetData(items);
         setUploadStatus('Mock data loaded');
         setTimeout(() => setUploadStatus(''), 3000);
@@ -223,14 +206,22 @@ export const DashboardPage = () => {
         return group && group.startsWith('bmu');
     });
 
+    const wsStatusColor = {
+        connected: 'text-success',
+        connecting: 'text-warning',
+        disconnected: 'text-red-400'
+    }[wsStatus] || 'text-muted';
+
+    const wsStatusIcon = wsStatus === 'connected' ? <Wifi size={14} /> : <WifiOff size={14} />;
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-text tracking-tight">Live Telemetry</h2>
-                    <p className="text-muted text-sm mt-1 font-mono">
-                        SYSTEM STATUS: <span className={isAutoUpdate ? "text-success" : "text-warning"}>
-                            {isAutoUpdate ? 'ONLINE' : 'STANDBY'}
+                    <p className="text-muted text-sm mt-1 font-mono flex items-center gap-2">
+                        STREAM: <span className={`flex items-center gap-1 ${wsStatusColor}`}>
+                            {wsStatusIcon} {wsStatus.toUpperCase()}
                         </span>
                     </p>
                 </div>
@@ -255,11 +246,6 @@ export const DashboardPage = () => {
             )}
 
             <ControlPanel
-                interval={intervalTime}
-                setInterval={setIntervalTime}
-                isAutoUpdate={isAutoUpdate}
-                setIsAutoUpdate={setIsAutoUpdate}
-                onManualUpdate={loadData}
                 onFileUpload={handleFileUpload}
                 onLoadMock={loadMockData}
                 uploadStatus={uploadStatus}
@@ -267,12 +253,12 @@ export const DashboardPage = () => {
 
             {/* Debug Info */}
             <div className="text-xs text-muted/50 font-mono">
-                Debug: {debugInfo} | Total data points: {normalizedData.length}
+                WS: {wsStatus} | Data points: {normalizedData.length} / {maxDataPoints}
             </div>
 
             {error && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-lg flex items-center gap-2">
-                    <span>⚠️ {error}</span>
+                    <span>{error}</span>
                 </div>
             )}
 
