@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { FileJson, FileSpreadsheet, Download } from 'lucide-react';
 
 // Merge data points by timestamp (group points within a time window)

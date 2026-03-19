@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { SessionList } from '../components/SessionList';
-import { PlaybackControls } from '../components/PlaybackControls';
-import { ExportControls } from '../components/ExportControls';
+import { SessionList } from '../components/session/SessionList.jsx';
+import { PlaybackControls } from '../components/session/PlaybackControls';
+import { ExportControls } from '../components/session/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
 import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions, deleteUnnamedSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
-import { normalizeData } from '../utils/dataProcessor';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { format } from 'date-fns';
 
@@ -75,8 +74,7 @@ export const HistoryPage = () => {
     const loadSession = async (session_id) => {
         setIsLoading(true);
         try {
-            const data = await getSessionData(session_id, 0, 5000);
-            const normalized = data.map(d => normalizeData(d));
+            const normalized = await getSessionData(session_id, 0, 5000);
             setSessionData(normalized);
             setSelectedSession(sessionList.find(s => s.session_id === session_id));
             setCurrentTime(0);
@@ -174,9 +172,8 @@ export const HistoryPage = () => {
 
                             {/* Data Visualization */}
                             <div className="space-y-6">
-                                <DataGroupPanel {...DATA_GROUPS.MECHANICAL} data={playbackData} />
-                                <DataGroupPanel {...DATA_GROUPS.ODOMETRY} data={playbackData} />
-                                <DataGroupPanel {...DATA_GROUPS.ELECTRICAL} data={playbackData} />
+                                <DataGroupPanel {...DATA_GROUPS.DYNAMICS} data={playbackData} />
+                                <DataGroupPanel {...DATA_GROUPS.POWERTRAIN} data={playbackData} />
                             </div>
 
                             {/* Export Controls */}

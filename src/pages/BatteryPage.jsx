@@ -2,12 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { useTelemetryStream } from '../hooks/useTelemetryStream';
 import { BMU_UNITS } from '../constants/dataGroups';
-import { BMSCellChart } from '../components/bms/BMSCellChart';
-import { BMSTempChart } from '../components/bms/BMSTempChart';
-import { BMSFaultTable } from '../components/bms/BMSFaultTable';
+import { BMSCellChart } from '../components/battery_widget/BMSCellChart';
+import { BMSTempChart } from '../components/battery_widget/BMSTempChart';
+import { BMSFaultTable } from '../components/battery_widget/BMSFaultTable';
 import { TableSection } from '../components/TableSection';
 
-export const BMSPage = () => {
+export const BatteryPage = () => {
     const { data, isStale } = useTelemetryStream();
     const [selectedBMU, setSelectedBMU] = useState('bmu0');
 
@@ -32,9 +32,9 @@ export const BMSPage = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-text">BMS Monitor</h1>
+                    <h1 className="text-3xl font-bold text-text">Battery</h1>
                     <p className="text-sm text-muted mt-1">
-                        Battery Management System - Cell Voltages, Temperatures & Faults
+                        Cell voltages, temperatures & fault status
                         {isStale && <span className="text-yellow-400 ml-2">| STALE</span>}
                     </p>
                 </div>

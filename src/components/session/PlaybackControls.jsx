@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 
 export const PlaybackControls = ({

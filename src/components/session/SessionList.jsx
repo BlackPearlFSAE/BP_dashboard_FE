@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { format, differenceInSeconds } from 'date-fns';
 import { Search, Calendar, Trash2, Database } from 'lucide-react';
 

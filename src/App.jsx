@@ -1,12 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
-import { DashboardPage } from './pages/DashboardPage';
-import { VehicleDynamicPage } from './pages/VehicleDynamicPage';
-
-import { ElectricalPage } from './pages/ElectricalPage';
-import { BMSPage } from './pages/BMSPage';
-import { OdometryPage } from './pages/OdometryPage';
+import { PitwallPage } from './pages/PitwallPage';
+import { DynamicsPage } from './pages/DynamicPage';
+import { PowertrainPage } from './pages/PowertrainPage';
+import { BatteryPage } from './pages/BatteryPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { ThemeProvider } from './context/ThemeContext';
 import { SessionProvider } from './context/SessionContext';
@@ -18,11 +16,10 @@ function App() {
         <BrowserRouter>
           <MainLayout>
             <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/mechanical" element={<VehicleDynamicPage />} />
-              <Route path="/electrical" element={<ElectricalPage />} />
-              <Route path="/bms" element={<BMSPage />} />
-              <Route path="/odometry" element={<OdometryPage />} />
+              <Route path="/" element={<PitwallPage />} />
+              <Route path="/dynamics" element={<DynamicsPage />} />
+              <Route path="/powertrain" element={<PowertrainPage />} />
+              <Route path="/battery" element={<BatteryPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

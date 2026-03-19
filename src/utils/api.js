@@ -1,5 +1,6 @@
 // Use relative path for proxy in development, absolute for production if needed
 const isDev = import.meta.env.DEV;
+// const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
@@ -94,7 +95,7 @@ export const getSessionList = async (limit = 50, offset = 0) => {
 };
 
 export const getSessionData = async (session_id, offset = 0, limit = 1000) => {
-    const response = await fetch(`${SESSION_API_URL}/${session_id}/data?offset=${offset}&limit=${limit}`);
+    const response = await fetch(`${SESSION_API_URL}/${session_id}/data?offset=${offset}&limit=${limit}&normalized=true`);
     if (!response.ok) {
         throw new Error(`Failed to fetch session data: ${response.status}`);
     }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { Circle, Square } from 'lucide-react';
-import { useSession } from '../context/SessionContext';
+import { useSession } from '../../context/SessionContext';
 
 export const SessionControl = () => {
     const { activeSession, isRecording, startSession, stopSession, renameSession } = useSession();

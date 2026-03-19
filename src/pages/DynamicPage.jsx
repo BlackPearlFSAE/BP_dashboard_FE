@@ -4,7 +4,7 @@ import { useTelemetryStream } from '../hooks/useTelemetryStream';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { Wifi, WifiOff } from 'lucide-react';
 
-export const ElectricalPage = () => {
+export const DynamicsPage = () => {
     const { data, wsStatus, isStale } = useTelemetryStream();
 
     const wsStatusColor = {
@@ -16,9 +16,9 @@ export const ElectricalPage = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold text-text tracking-tight">Electrical & Powertrain</h1>
+                <h1 className="text-3xl font-bold text-text tracking-tight">Dynamics</h1>
                 <p className="text-muted text-sm mt-1 font-mono flex items-center gap-2">
-                    Sensors, faults & motor controller
+                    Suspension, wheel speed & vehicle dynamics
                     <span className={`flex items-center gap-1 ${wsStatusColor}`}>
                         {wsStatus === 'connected' ? <Wifi size={14} /> : <WifiOff size={14} />}
                         {wsStatus.toUpperCase()}
@@ -27,7 +27,7 @@ export const ElectricalPage = () => {
                 </p>
             </div>
 
-            <DataGroupPanel {...DATA_GROUPS.ELECTRICAL} data={data} />
+            <DataGroupPanel {...DATA_GROUPS.DYNAMICS} data={data} />
         </div>
     );
 };

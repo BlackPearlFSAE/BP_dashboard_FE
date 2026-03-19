@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Cog, Zap, Battery, MapPin, History, Settings, Menu, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Activity, Zap, Battery, History, Settings, Menu, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export const MainLayout = ({ children }) => {
@@ -12,18 +12,16 @@ export const MainLayout = ({ children }) => {
             <aside className="w-64 bg-surface border-r border-border hidden md:flex flex-col">
                 <div className="p-6 border-b border-border">
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent italic tracking-tighter">
-                        BLACK PEARL
+                        BLACKPEARL Dashboard
                     </h1>
-                    <p className="text-xs text-muted mt-1 tracking-widest uppercase">Pitwall</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1">
                     {[
-                        { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
-                        { to: '/mechanical', icon: Cog, label: 'Mechanical' },
-                        { to: '/electrical', icon: Zap, label: 'Electrical' },
-                        { to: '/bms', icon: Battery, label: 'BMS' },
-                        { to: '/odometry', icon: MapPin, label: 'Odometry' },
+                        { to: '/', icon: LayoutDashboard, label: 'Pitwall', end: true },
+                        { to: '/dynamics', icon: Activity, label: 'Dynamics' },
+                        { to: '/powertrain', icon: Zap, label: 'Powertrain' },
+                        { to: '/battery', icon: Battery, label: 'Battery' },
                         { to: '/history', icon: History, label: 'History' },
                     ].map(({ to, icon: Icon, label, end }) => (
                         <NavLink
