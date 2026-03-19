@@ -7,7 +7,7 @@ export const DataGroupPanel = ({ title, groups, data, icon, description }) => {
     // Filter data by group names
     const filteredData = useMemo(() => {
         return data.filter(item => {
-            const group = item.original?.data?.group;
+            const group = item.group || item.original?.data?.group;
             return group && groups.includes(group);
         });
     }, [data, groups]);

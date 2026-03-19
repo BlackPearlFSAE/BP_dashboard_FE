@@ -1,30 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { normalizeData } from '../utils/dataProcessor';
-import { createTelemetrySocket } from '../utils/websocket';
+import { useTelemetryStream } from '../hooks/useTelemetryStream';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { Wifi, WifiOff } from 'lucide-react';
 
 export const ElectricalPage = () => {
-    const [normalizedData, setNormalizedData] = useState([]);
-    const [wsStatus, setWsStatus] = useState('connecting');
-    const dataBufferRef = useRef([]);
-
-    useEffect(() => {
-        const cleanup = createTelemetrySocket(
-            (message) => {
-                try {
-                    const normalized = normalizeData(message);
-                    dataBufferRef.current = [...dataBufferRef.current, normalized].slice(-500);
-                    setNormalizedData([...dataBufferRef.current]);
-                } catch (err) {
-                    console.error('[Electrical] WS Processing Error:', err);
-                }
-            },
-            (status) => setWsStatus(status)
-        );
-        return cleanup;
-    }, []);
+    const { data, wsStatus, isStale } = useTelemetryStream();
 
     const wsStatusColor = {
         connected: 'text-success',
@@ -42,10 +23,11 @@ export const ElectricalPage = () => {
                         {wsStatus === 'connected' ? <Wifi size={14} /> : <WifiOff size={14} />}
                         {wsStatus.toUpperCase()}
                     </span>
+                    {isStale && <span className="text-yellow-400">| STALE</span>}
                 </p>
             </div>
 
-            <DataGroupPanel {...DATA_GROUPS.ELECTRICAL} data={normalizedData} />
+            <DataGroupPanel {...DATA_GROUPS.ELECTRICAL} data={data} />
         </div>
     );
 };

@@ -48,10 +48,10 @@ export const ChartSection = ({ data, groupFilter }) => {
                 t.add(d.topic_name);
             } else {
                 // Extract keys from flattened data
-                const group = d.original?.data?.group;
+                const group = d.group || d.original?.data?.group;
                 if (!groupFilter || groupFilter.includes(group)) {
                     Object.keys(d).forEach(key => {
-                        if (!['id', 'session_id', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'latitude', 'longitude'].includes(key) && typeof d[key] === 'number') {
+                        if (!['id', 'session_id', 'session_name', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'group', 'latitude', 'longitude'].includes(key) && typeof d[key] === 'number') {
                             t.add(key);
                         }
                     });

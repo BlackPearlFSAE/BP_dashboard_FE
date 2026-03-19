@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
-import { normalizeData } from '../utils/dataProcessor';
-import { createTelemetrySocket } from '../utils/websocket';
+import { useTelemetryStream } from '../hooks/useTelemetryStream';
 import { BMU_UNITS } from '../constants/dataGroups';
 import { BMSCellChart } from '../components/bms/BMSCellChart';
 import { BMSTempChart } from '../components/bms/BMSTempChart';
@@ -9,43 +8,23 @@ import { BMSFaultTable } from '../components/bms/BMSFaultTable';
 import { TableSection } from '../components/TableSection';
 
 export const BMSPage = () => {
-    const [normalizedData, setNormalizedData] = useState([]);
+    const { data, isStale } = useTelemetryStream();
     const [selectedBMU, setSelectedBMU] = useState('bmu0');
-    const [isLoading, setIsLoading] = useState(true);
-    const dataBufferRef = useRef([]);
-
-    // WebSocket connection for live BMS data
-    useEffect(() => {
-        const cleanup = createTelemetrySocket(
-            (message) => {
-                try {
-                    const normalized = normalizeData(message);
-                    dataBufferRef.current = [...dataBufferRef.current, normalized].slice(-500);
-                    setNormalizedData([...dataBufferRef.current]);
-                    setIsLoading(false);
-                } catch (err) {
-                    console.error('[BMS] WS Processing Error:', err);
-                }
-            },
-            () => {}
-        );
-        return cleanup;
-    }, []);
 
     // Filter BMS data for selected BMU
     const bmuData = useMemo(() => {
-        return normalizedData.filter(d => {
-            const group = d.original?.data?.group;
+        return data.filter(d => {
+            const group = d.group;
             return group && group.startsWith(selectedBMU);
         });
-    }, [normalizedData, selectedBMU]);
+    }, [data, selectedBMU]);
 
     const cellsData = useMemo(() => {
-        return bmuData.filter(d => d.original?.data?.group?.includes('.cells'));
+        return bmuData.filter(d => d.group?.includes('.cells'));
     }, [bmuData]);
 
     const faultsData = useMemo(() => {
-        return bmuData.filter(d => d.original?.data?.group?.includes('.faults'));
+        return bmuData.filter(d => d.group?.includes('.faults'));
     }, [bmuData]);
 
     return (
@@ -56,6 +35,7 @@ export const BMSPage = () => {
                     <h1 className="text-3xl font-bold text-text">BMS Monitor</h1>
                     <p className="text-sm text-muted mt-1">
                         Battery Management System - Cell Voltages, Temperatures & Faults
+                        {isStale && <span className="text-yellow-400 ml-2">| STALE</span>}
                     </p>
                 </div>
 
@@ -72,7 +52,7 @@ export const BMSPage = () => {
                 </select>
             </div>
 
-            {isLoading ? (
+            {data.length === 0 ? (
                 <Card className="p-12 text-center">
                     <p className="text-muted">Loading BMS data...</p>
                 </Card>

@@ -14,7 +14,7 @@ export const MainLayout = ({ children }) => {
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent italic tracking-tighter">
                         BLACK PEARL
                     </h1>
-                    <p className="text-xs text-muted mt-1 tracking-widest uppercase">Racing Telemetry</p>
+                    <p className="text-xs text-muted mt-1 tracking-widest uppercase">Pitwall</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1">

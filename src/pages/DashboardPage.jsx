@@ -4,7 +4,6 @@ import { SessionControl } from '../components/SessionControl';
 import { ControlPanel } from '../components/ControlPanel';
 import { useSession } from '../context/SessionContext';
 import { createTelemetrySocket } from '../utils/websocket';
-import { normalizeData } from '../utils/dataProcessor';
 import { Cog, Zap, Battery, MapPin, AlertCircle, Circle, Wifi, WifiOff } from 'lucide-react';
 
 const SECTIONS = [

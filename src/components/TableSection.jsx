@@ -14,7 +14,7 @@ export const TableSection = ({ data, groupFilter }) => {
             if (d.topic_name) {
                 t.add(d.topic_name);
             } else {
-                const group = d.original?.data?.group;
+                const group = d.group || d.original?.data?.group;
                 if (!groupFilter || groupFilter.includes(group)) {
                     t.add(group);
                 }
@@ -27,7 +27,7 @@ export const TableSection = ({ data, groupFilter }) => {
         let res = data;
         if (filterTopic !== 'all') {
             res = res.filter(d => {
-                const topicName = d.topic_name || d.original?.data?.group;
+                const topicName = d.topic_name || d.group || d.original?.data?.group;
                 return topicName === filterTopic;
             });
         }
@@ -39,7 +39,7 @@ export const TableSection = ({ data, groupFilter }) => {
         });
     }, [data, filterTopic, sortOrder]);
 
-    const META_KEYS = new Set(['id', 'session_id', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'latitude', 'longitude']);
+    const META_KEYS = new Set(['id', 'session_id', 'session_name', 'experiment_id', 'timestamp', 'createdAt', 'original', 'topic_name', 'group', 'latitude', 'longitude']);
 
     const formatValue = (item) => {
         // Old format: explicit value fields
@@ -57,7 +57,7 @@ export const TableSection = ({ data, groupFilter }) => {
             .filter(([k, v]) => !META_KEYS.has(k) && typeof v === 'number')
             .map(([k, v]) => `${displayName(k)}: ${v.toFixed(3)}`);
         if (fields.length > 0) return fields.slice(0, 4).join(' | ');
-        return JSON.stringify(item.original?.data?.values || item.original?.data?.data || '').slice(0, 60);
+        return JSON.stringify(item.original?.data?.values || item.original?.data?.data || item).slice(0, 60);
     };
 
     return (
@@ -101,7 +101,7 @@ export const TableSection = ({ data, groupFilter }) => {
                                     {format(row.timestamp, 'HH:mm:ss.SS')}
                                 </td>
                                 <td className="p-2 text-primary font-bold whitespace-nowrap break-all">
-                                    {row.topic_name || row.original?.data?.group || '—'}
+                                    {row.topic_name || row.group || row.original?.data?.group || '—'}
                                 </td>
                                 <td className="p-2 text-text font-medium break-all">
                                     {formatValue(row)}
