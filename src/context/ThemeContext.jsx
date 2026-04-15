@@ -8,8 +8,8 @@ export const ThemeProvider = ({ children }) => {
         if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
             return localStorage.getItem('theme');
         }
-        // Default to light as requested
-        return 'light';
+        // Default: Dark theme if not set the local preference
+        return 'dark';
     });
 
     useEffect(() => {

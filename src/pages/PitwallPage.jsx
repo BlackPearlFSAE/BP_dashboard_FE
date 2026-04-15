@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { SessionControl } from '../components/session/SessionControl';
 import { useSession } from '../context/SessionContext';
 import { useTelemetryStream } from '../hooks/useTelemetryStream';
 import { FaultBar } from '../components/pitwall_widget/FaultBar';
@@ -114,8 +113,6 @@ export const PitwallPage = () => {
                     </p>
                 </div>
             </div>
-
-            <SessionControl />
 
             {isRecording && activeSession && (
                 <div className="bg-green-500/10 border border-green-500/50 text-green-200 p-3 rounded-lg flex items-center gap-2 text-sm">

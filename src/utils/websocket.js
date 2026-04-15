@@ -3,11 +3,9 @@ const isDev = import.meta.env.DEV;
 
 const getWsUrl = () => {
   if (isDev) {
-    // In dev, Vite proxy handles /ws → backend
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}/ws?role=dashboard`;
   }
-  // Production: connect directly to backend
   return 'wss://blackpearl-ws-8z9a.onrender.com/?role=dashboard';
 };
 
@@ -39,7 +37,6 @@ export const createTelemetrySocket = (onMessage, onStatusChange) => {
     ws.onclose = () => {
       console.log('[WS] Disconnected');
       onStatusChange?.('disconnected');
-      // Auto-reconnect after 2s
       if (!isDestroyed) {
         reconnectTimer = setTimeout(connect, 2000);
       }
@@ -53,8 +50,13 @@ export const createTelemetrySocket = (onMessage, onStatusChange) => {
 
   connect();
 
-  // Return cleanup function
-  return () => {
+  const send = (msg) => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(msg));
+    }
+  };
+
+  const cleanup = () => {
     isDestroyed = true;
     clearTimeout(reconnectTimer);
     if (ws) {
@@ -62,4 +64,6 @@ export const createTelemetrySocket = (onMessage, onStatusChange) => {
       ws = null;
     }
   };
+
+  return { cleanup, send };
 };

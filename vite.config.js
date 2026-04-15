@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
     ],
+    // Config development server (for npm run dev)
     server: {
       proxy: {
         '/api': {

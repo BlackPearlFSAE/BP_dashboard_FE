@@ -3,12 +3,13 @@ import { startSession as startSessionAPI, stopSession as stopSessionAPI, getActi
 
 const SessionContext = createContext();
 
+// SessionProvider module will start , stop session , maintain and sync session when the record button is clicked
 export const SessionProvider = ({ children }) => {
     const [activeSession, setActiveSession] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Sync with backend on mount (handles browser refresh during recording)
+    // Poll backend every 5s — keeps all open tabs in sync
     useEffect(() => {
         const syncActiveSession = async () => {
             try {
@@ -16,7 +17,9 @@ export const SessionProvider = ({ children }) => {
                 if (session) {
                     setActiveSession(session);
                     setIsRecording(true);
-                    console.log('[SESSION] Restored active session:', session.session_id);
+                } else {
+                    setActiveSession(null);
+                    setIsRecording(false);
                 }
             } catch (error) {
                 console.error('[SESSION] Failed to sync active session:', error);
@@ -26,6 +29,8 @@ export const SessionProvider = ({ children }) => {
         };
 
         syncActiveSession();
+        const poll = setInterval(syncActiveSession, 5000);
+        return () => clearInterval(poll);
     }, []);
 
     const startSession = async (name = null) => {

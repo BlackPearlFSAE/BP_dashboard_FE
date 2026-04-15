@@ -1,6 +1,4 @@
-// Use relative path for proxy in development, absolute for production if needed
 const isDev = import.meta.env.DEV;
-// const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;

@@ -1,40 +1,47 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createTelemetrySocket } from '../utils/websocket';
+import { useTelemetryConfig } from '../context/TelemetryConfigContext';
 
-const BUFFER_LIMIT = 500;
-const RENDER_INTERVAL_MS = 100; // ~10fps max render rate
-const STALE_TIMEOUT_MS = 10000; // clear charts after 10s of no data
+const STALE_TIMEOUT_MS = 10000;
 
-export const useTelemetryStream = () => {
+export const DEFAULT_BUFFER_LIMIT = 500;
+
+export const useTelemetryStream = ({ bufferLimit: bufferLimitProp } = {}) => {
+    const config = useTelemetryConfig();
+    const bufferLimit = bufferLimitProp ?? config?.bufferLimit ?? DEFAULT_BUFFER_LIMIT;
+    const renderInterval = config?.renderInterval ?? 100;
+
     const [data, setData] = useState([]);
     const [wsStatus, setWsStatus] = useState('connecting');
     const [isStale, setIsStale] = useState(false);
+
     const bufferRef = useRef([]);
     const dirtyRef = useRef(false);
     const lastMessageRef = useRef(Date.now());
-    const renderTimerRef = useRef(null);
-    const staleTimerRef = useRef(null);
+    const bufferLimitRef = useRef(bufferLimit);
+    const renderIntervalRef = useRef(renderInterval);
+
+    useEffect(() => { bufferLimitRef.current = bufferLimit; }, [bufferLimit]);
+    useEffect(() => { renderIntervalRef.current = renderInterval; }, [renderInterval]);
 
     useEffect(() => {
-        // Throttled render loop — only flushes buffer to state at fixed interval
-        renderTimerRef.current = setInterval(() => {
+        // Throttled render loop — flushes buffer to React state at renderInterval
+        let renderTimer = setInterval(() => {
             if (dirtyRef.current) {
                 setData([...bufferRef.current]);
                 dirtyRef.current = false;
             }
-        }, RENDER_INTERVAL_MS);
+        }, renderIntervalRef.current);
 
-        // Stale data check
-        staleTimerRef.current = setInterval(() => {
+        const staleTimer = setInterval(() => {
             if (Date.now() - lastMessageRef.current > STALE_TIMEOUT_MS) {
                 setIsStale(true);
             }
         }, STALE_TIMEOUT_MS);
 
-        const cleanup = createTelemetrySocket(
+        const socket = createTelemetrySocket(
             (message) => {
-                // Backend sends pre-normalized data — push directly into buffer
-                bufferRef.current = [...bufferRef.current, message].slice(-BUFFER_LIMIT);
+                bufferRef.current = [...bufferRef.current, message].slice(-bufferLimitRef.current);
                 dirtyRef.current = true;
                 lastMessageRef.current = Date.now();
                 setIsStale(false);
@@ -43,11 +50,12 @@ export const useTelemetryStream = () => {
         );
 
         return () => {
-            cleanup();
-            clearInterval(renderTimerRef.current);
-            clearInterval(staleTimerRef.current);
+            socket.cleanup();
+            clearInterval(renderTimer);
+            clearInterval(staleTimer);
         };
-    }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [renderInterval]); // re-mount when renderInterval changes
 
     return { data, wsStatus, isStale };
 };
