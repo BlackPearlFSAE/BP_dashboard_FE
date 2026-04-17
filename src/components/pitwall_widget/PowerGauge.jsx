@@ -5,7 +5,8 @@ import React from 'react';
  * Uses an arc built with SVG.
  */
 export const PowerGauge = ({ power, maxPower = 80 }) => {
-    const val = power ?? 0;
+    // `power` arrives in Watts (V*A from BAMO). Convert to kW here at the display boundary.
+    const val = (power ?? 0) / 1000;
     const pct = Math.min(100, Math.max(0, (Math.abs(val) / maxPower) * 100));
     const isRegen = val < 0;
 

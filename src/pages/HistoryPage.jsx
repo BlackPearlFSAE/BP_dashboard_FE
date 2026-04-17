@@ -5,7 +5,7 @@ import { SessionList } from '../components/session/SessionList.jsx';
 import { PlaybackControls } from '../components/session/PlaybackControls';
 import { ExportControls } from '../components/session/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
-import { getSessionList, getSessionData, deleteSessionById, deleteAllSessions, deleteUnnamedSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
+import { getSessionList, getAllSessionData, deleteSessionById, deleteAllSessions, deleteUnnamedSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
 import { DATA_GROUPS } from '../constants/dataGroups';
 import { format } from 'date-fns';
 
@@ -16,6 +16,7 @@ export const HistoryPage = () => {
     const [currentTime, setCurrentTime] = useState(0); // 0-1 slider value
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadProgress, setLoadProgress] = useState(0);
 
     useEffect(() => {
         loadSessionList();
@@ -73,9 +74,12 @@ export const HistoryPage = () => {
 
     const loadSession = async (session_id) => {
         setIsLoading(true);
+        setLoadProgress(0);
         try {
-            const normalized = await getSessionData(session_id, 0, 5000);
-            setSessionData(normalized);
+            const allData = await getAllSessionData(session_id, (loaded) => {
+                setLoadProgress(loaded);
+            });
+            setSessionData(allData);
             setSelectedSession(sessionList.find(s => s.session_id === session_id));
             setCurrentTime(0);
             setIsPlaying(false);
@@ -87,16 +91,28 @@ export const HistoryPage = () => {
         }
     };
 
+    const { startMs, endMs } = useMemo(() => {
+        if (!selectedSession?.start_time || !selectedSession?.end_time) {
+            return { startMs: 0, endMs: 0 };
+        }
+        return {
+            startMs: new Date(selectedSession.start_time).getTime(),
+            endMs: new Date(selectedSession.end_time).getTime()
+        };
+    }, [selectedSession]);
+
     const playbackData = useMemo(() => {
         if (!sessionData.length) return [];
-
-        const timestamps = sessionData.map(d => d.timestamp);
-        const minTime = Math.min(...timestamps);
-        const maxTime = Math.max(...timestamps);
-        const currentTimestamp = minTime + (currentTime * (maxTime - minTime));
-
-        return sessionData.filter(d => d.timestamp <= currentTimestamp);
-    }, [sessionData, currentTime]);
+        const currentTimestamp = startMs + (currentTime * (endMs - startMs));
+        // Binary search: find the last index where timestamp <= currentTimestamp
+        let lo = 0, hi = sessionData.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (sessionData[mid].timestamp <= currentTimestamp) lo = mid + 1;
+            else hi = mid;
+        }
+        return sessionData.slice(0, lo);
+    }, [sessionData, currentTime, startMs, endMs]);
 
     return (
         <div className="space-y-6">
@@ -158,7 +174,9 @@ export const HistoryPage = () => {
 
                     {isLoading ? (
                         <Card className="p-12 text-center">
-                            <p className="text-muted">Loading session data...</p>
+                            <p className="text-muted">
+                                Loading session data...{loadProgress > 0 && ` (${loadProgress.toLocaleString()} rows)`}
+                            </p>
                         </Card>
                     ) : (
                         <>
@@ -168,6 +186,8 @@ export const HistoryPage = () => {
                                 setCurrentTime={setCurrentTime}
                                 isPlaying={isPlaying}
                                 setIsPlaying={setIsPlaying}
+                                startMs={startMs}
+                                endMs={endMs}
                             />
 
                             {/* Data Visualization */}

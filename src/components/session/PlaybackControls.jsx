@@ -1,30 +1,48 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { useTelemetryConfig } from '../../context/TelemetryConfigContext';
+
+const formatClock = (ms) => {
+    if (!Number.isFinite(ms) || ms < 0) ms = 0;
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    const millis = Math.floor(ms % 1000);
+    return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+};
 
 export const PlaybackControls = ({
     currentTime,
     setCurrentTime,
     isPlaying,
-    setIsPlaying
+    setIsPlaying,
+    startMs,
+    endMs
 }) => {
-    // Auto-advance when playing
-    useEffect(() => {
-        if (!isPlaying) return;
+    const { renderInterval } = useTelemetryConfig();
+    const durationMs = Math.max(0, (endMs ?? 0) - (startMs ?? 0));
+    const elapsedMs = durationMs * currentTime;
 
+    // Auto-advance in real wall-clock time, ticking at the configured render interval
+    useEffect(() => {
+        if (!isPlaying || durationMs <= 0) return;
+
+        const tickMs = Math.max(16, renderInterval || 100);
         const interval = setInterval(() => {
             setCurrentTime(prev => {
-                if (prev >= 1) {
+                const next = prev + tickMs / durationMs;
+                if (next >= 1) {
                     setIsPlaying(false);
                     return 1;
                 }
-                return Math.min(prev + 0.01, 1); // Advance 1% every 100ms
+                return next;
             });
-        }, 100);
+        }, tickMs);
 
         return () => clearInterval(interval);
-    }, [isPlaying, setCurrentTime, setIsPlaying]);
+    }, [isPlaying, setCurrentTime, setIsPlaying, renderInterval, durationMs]);
 
     const handleSkipBack = () => {
         setCurrentTime(prev => Math.max(prev - 0.1, 0));
@@ -113,10 +131,11 @@ export const PlaybackControls = ({
 
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-muted font-mono">
-                            Progress:
+                            Time:
                         </span>
-                        <span className="text-lg font-mono font-bold text-primary w-16 text-right">
-                            {Math.floor(currentTime * 100)}%
+                        <span className="text-lg font-mono font-bold text-primary text-right tabular-nums">
+                            {formatClock(elapsedMs)}
+                            <span className="text-muted font-normal"> / {formatClock(durationMs)}</span>
                         </span>
                     </div>
                 </div>

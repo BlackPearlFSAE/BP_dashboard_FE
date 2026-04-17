@@ -1,36 +1,54 @@
 # BlackPearl Dashboard (BP16B) — Frontend
-The educational example of how BP16B Dashboard are built. From user's interview and some reference from race engineer pitwall Inspried by xyz
+
+Race-engineer dashboard for the BP16B Formula Student Electric car. Live telemetry, session recording, and history playback — inspired by professional pitwall software, built as an educational reference for student teams.
+
+<p align="center">
+  <a href="doc/data-flow.md">Data Flow</a> ·
+  <a href="doc/component-patterns.md">Component Patterns</a> ·
+  <a href="doc/theming.md">Theming</a> ·
+  <a href="doc/sensor-naming.md">Sensor Naming</a> ·
+  <a href="../BlackPearl_WS">Backend repo</a>
+</p>
+
+![Pitwall](/images/Pitwallsnippet.png)
+
+---
+
 ## Tech Stack
 
 - **React 18** with Vite
 - **Tailwind CSS v4** (CSS-based theme with `@theme` directive, no `tailwind.config.js`)
-- **React Router v6** -> SPA with client-side routing
+- **React Router v6** — SPA with client-side routing
 - **Chart.js / react-chartjs-2** — all time-series visualisation
 - **date-fns** — timestamp formatting
 - **lucide-react** — icon library
 
-Snippet shot of the page
-![Pitwall.png](/asset/Pitwallsnippet.png)
+## Features
 
----
+| Live view | Recording | History |
+|---|---|---|
+| Pitwall overview with gauges, trend, faults | Start / stop / rename sessions from any page | Browsable session list with search |
+| Dynamics, Powertrain, Battery pages | Backend handles all DB writes | Time-scrubber playback |
+| 10 fps throttled updates, stale detection | [WebSocket](doc/data-flow.md#live-telemetry-websocket) auto-reconnect | Export to JSON or CSV |
 
 ## Project Structure
 
 ```
 BP_dashboard_FE/
-├── index.html          # Main page loads content from src/main.jsx
-├── vite.config.js      # Vite build config + dev-server proxy (reads VITE_BACKEND)
-├── .env.local          # Local env variable (production use docker env variable)
+├── index.html          # SPA shell — loads from src/main.jsx
+├── vite.config.js      # Config Vite build to be for development or production
+├── .env.local          # Local env variables (production uses container env)
+├── doc/                # Learn more about project
 └── src/
     ├── main.jsx        # Entry point
-    ├── App.jsx         # Router + top-level providers
+    ├── App.jsx         # Router + top-level context providers
     ├── index.css       # Tailwind imports + CSS custom properties
     ├── pages/          # One component per route
     ├── components/     # Shared and page-specific UI components
     ├── hooks/          # Custom React hooks (WebSocket stream, etc.)
-    ├── context/        # React context providers (Session, Theme)
+    ├── context/        # React context providers (Session recorder, Theme)
     ├── constants/      # Static config (data group map, sensor display names)
-    └── utils/          # API helpers, WebSocket client, data processor
+    └── utils/          # API helpers, WebSocket client
 ```
 
 ### `vite.config.js`
@@ -44,213 +62,58 @@ Reads `VITE_BACKEND` at dev-server start and sets proxy targets accordingly:
 
 No code changes needed to switch between local and production — only `.env.local`.
 
----
-
 ## Routing
 
 All routes are defined in `App.jsx` inside `<MainLayout>`, which provides the persistent sidebar.
 
-| Route | Page Component | Description |
-|-------|---------------|-------------|
-| `/` | `PitwallPage` | Race engineer overview with live gauges |
-| `/dynamics` | `DynamicsPage` | Suspension, wheel RPM, GPS, IMU data |
+| Route | Page | Description |
+|-------|------|-------------|
+| `/`           | `PitwallPage`    | Race-engineer overview with live gauges |
+| `/dynamics`   | `DynamicsPage`   | Suspension, wheel RPM, GPS, IMU data |
 | `/powertrain` | `PowertrainPage` | Motor controller, inverter, electrical sensors |
-| `/battery` | `BatteryPage` | BMS cell voltages, temperatures, faults by BMU |
-| `/history` | `HistoryPage` | Session list → playback with time scrubber + export |
-| `*` | Redirect to `/` | Catch-all |
+| `/battery`    | `BatteryPage`    | BMS cell voltages, temperatures, faults by BMU |
+| `/history`    | `HistoryPage`    | Session list → playback with time scrubber + export |
+| `/settings`   | `SettingsPage`   | Render interval, buffer size, dev-only server knobs |
+| `*`           | Redirect to `/`  | Catch-all |
 
-The sidebar in `MainLayout.jsx` renders `<NavLink>` for each route with active-state styling.
+## Quick Start
+
+Requires NodeJS 18+.
+
+```bash
+npm install         # install all modules
+npm run dev         # serves on http://localhost:5173
+```
+
+By default the dev server proxies to the deployed backend. To run everything locally, create `.env.local` with `VITE_BACKEND=local` and start the backend server on port 3000. (Websocket TCP Port)
+
+For production I recommend using the free deployment service such as [netlify](https://www.netlify.com/)
+For manual deployment I suggest read this document
+[Link](Link)
+
+## Learn More
+- [Data Flow](/docs/data-flow.md) — WebSocket stream, session recording, history REST
+- [Component Patterns](/docs/component-patterns.md) — `DataGroupPanel`, Pitwall widgets, Battery layout
+- [Theming](/docs/theming.md) — Tailwind v4 CSS variables and dark/light mode
 
 ---
 
-## Data Flow
+## Future Work
 
-### Live Telemetry (WebSocket)
+### Role-based Settings (User vs Developer)
 
-```
-ESP32 Nodes → BlackPearl WS Backend → WebSocket → Frontend
-```
+The [SettingsPage.jsx](src/pages/SettingsPage.jsx) is split into two tiers; only the first is wired up today:
 
-1. **`websocket.js`** creates a WebSocket connection to the backend (`/ws?role=dashboard`).
-   - Auto-reconnects on disconnect (2s delay).
-   - In dev, Vite proxies `/ws` to the backend. In prod, connects to the deployed URL.
+| Tier | Section | Settings | Storage | Status |
+|---|---|---|---|---|
+| **User** | Display | `Render Interval`, `Buffer Size` | Browser `localStorage` via `TelemetryConfigContext` | Implemented |
+| **Developer** | Developer Settings | `Publish Rate` (server broadcast interval) | Backend `.env` / DB | Read-only placeholder |
 
-2. **`useTelemetryStream` hook** wraps the socket connection.
-   - Buffers incoming messages (max 500 points).
-   - Throttles React state updates to ~10fps via `setInterval`.
-   - Tracks `wsStatus` (connecting/connected/disconnected) and `isStale` (no data for 10s).
-   - Used by: `PitwallPage`, `DynamicsPage`, `PowertrainPage`, `BatteryPage`.
+The developer tier is currently disabled (greyed out). Planned:
 
-3. **Backend sends pre-normalised data** — each message is a flat object with `group`, `timestamp`, and sensor fields.
+1. Add a login/auth flow so the frontend can identify a user as "developer".
+2. Fetch current server config from a new backend endpoint (e.g. `GET /api/config`).
+3. Gate the editable inputs behind the dev role; unauthenticated users see the values read-only.
+4. Persist changes to the DB (not just `.env`) so they sync across all dashboard tabs and machines.
 
-### Session Recording
-
-Recording is managed through `SessionContext`, which wraps the REST API:
-
-| Action | UI Trigger | API Call | Endpoint |
-|--------|-----------|----------|----------|
-| Start recording | "START RECORDING" button in `SessionControl` | `POST /api/session/start` | `{ name }` |
-| Stop recording | "STOP RECORDING" button in `SessionControl` | `POST /api/session/stop` | `{ session_id }` |
-| Rename session | Name input blur in `SessionControl` | `PATCH /api/session/:id/rename` | `{ name }` |
-| Check active | On mount (page refresh) | `GET /api/session/active` | — |
-
-When recording is active, the backend stores incoming telemetry to the database. The frontend only controls start/stop — it does not send data.
-
-### History / Playback
-
-`HistoryPage` uses direct API calls (not context) to:
-
-| Action | UI Trigger | API Call |
-|--------|-----------|----------|
-| Load session list | Page mount | `GET /api/session/list?limit=100` |
-| Load session data | Click a session card | `GET /api/session/:id/data?normalized=true` |
-| Delete one session | Trash icon on card | `DELETE /api/session/:id` |
-| Delete all sessions | "Delete All" button | `DELETE /api/session/delete-all` |
-| Delete unnamed sessions | "Delete Unnamed" button | `DELETE /api/session/delete-unnamed` |
-| Delete stats by name | Button on card | `DELETE /api/stat/delete` with `{ session_name }` |
-| Delete all stats | "Delete All Stats" button | `DELETE /api/stat/delete-all` |
-| Delete unnamed stats | "Delete Unnamed Stats" button | `DELETE /api/stat/delete-unnamed` |
-
-Playback uses a time slider (`PlaybackControls`) that filters the loaded session data by timestamp to simulate time progression. The filtered subset is passed to `DataGroupPanel` components for visualisation.
-
-Export (`ExportControls`) converts session data client-side to JSON or CSV and triggers a browser download.
-
----
-
-## Component Patterns
-
-### DataGroupPanel
-
-The standard pattern for Dynamics, Powertrain, and History playback views:
-
-```
-DataGroupPanel
-├── ChartSection   (left)  — time-series chart with topic selector dropdown
-└── TableSection   (right) — raw data table with topic filter and time sort
-```
-
-`DataGroupPanel` receives a `groups` array (e.g., `['front.mech', 'rear.mech']`) and filters the data stream to only matching groups before passing to its children.
-
-### Pitwall Widgets
-
-`PitwallPage` does not use `DataGroupPanel`. Instead, it extracts the latest values from the stream using `useLatest()` / `useLatestMulti()` helper functions and renders purpose-built widgets:
-
-- `PowerGauge` — SVG arc for kW
-- `BarGauge` — horizontal bar (temps, pedal position)
-- `StatCard` — text value with unit
-- `FaultBar` — safety status strip
-- `TrendChart` — rolling 60s multi-line chart with preset selector
-- `GPSTrack` — scatter plot of GPS coordinates
-
-### Battery Page
-
-Custom layout with BMU selector dropdown. Uses specialised `battery_widget/` components that understand the BMS data shape (V_CELL arrays, TEMP_SENSE arrays, fault flags).
-
----
-
-## Theming
-
-Defined in `index.css` using CSS custom properties:
-
-- `:root` — light mode colours
-- `.dark` — dark mode overrides
-- `@theme` block maps properties to Tailwind utility classes
-
-Toggle is in the sidebar footer via `ThemeContext.toggleTheme()`.
-
-Key colours: `--color-primary` (orange), `--color-background`, `--color-surface`, `--color-border`, `--color-text`, `--color-muted`.
-
----
-
-## Sensor Display Names
-
-`constants/sensorDisplayNames.js` maps raw sensor keys to human-readable labels:
-
-```
-STR_Heave_mm → Heave_mm
-canVoltage   → Motor Voltage
-TMP          → Radiator Temp
-I_SENSE      → Accumulator Current
-```
-
-The `displayName(key)` function is used in `ChartSection` (chart labels, dropdown options) and `TableSection` (raw data values). Unmapped keys fall through unchanged.
-
----
-
-## Backend -> Frontend API Route table
-
-Base URL: `/api/stat/` and `/api/session/`
-
-### Stat Routes (`/api/stat`)
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `GET` | `/` | Fetch stats (optional `?since=` filter) |
-| `DELETE` | `/delete` | Delete stats by session name |
-| `DELETE` | `/delete-unnamed` | Delete stats with no session name |
-| `DELETE` | `/delete-all` | Delete all stats |
-
-### Session Routes (`/api/session`)
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/start` | Start recording session |
-| `POST` | `/stop` | Stop recording session |
-| `GET` | `/active` | Get currently recording session |
-| `GET` | `/list` | List sessions (paginated) |
-| `GET` | `/:id/data` | Get normalised data for a session |
-| `PATCH` | `/:id/rename` | Rename a session |
-| `DELETE` | `/:id` | Delete a session |
-| `DELETE` | `/delete-all` | Delete all sessions |
-| `DELETE` | `/delete-unnamed` | Delete unnamed sessions |
-
-### WebSocket
-
-- Endpoint: `/ws?role=dashboard`
-- Backend broadcasts telemetry to all connected dashboard clients.
-- Data arrives as JSON with `{ group, timestamp, values }` structure.
-
-
-<!-- --- -->
-
-<!-- ## Ext. implement GPS Trackmap with API
-
-GPS Track Map — Recommendation Summary
-What to Use
-Leaflet.js + OpenStreetMap via react-leaflet
-
-Free, no API key required
-Same look as the screenshot (OSM tiles, default Leaflet zoom controls)
-Polyline for driven route, CircleMarker for live car position
-Can color segments by speed using imu_accel_x/y + GPS data
-What It Would Replace
-The current OdometryPage uses a Chart.js scatter plot for GPS — it has no map background. Leaflet replaces this with a real interactive map.
-
-Key Features (When Implemented)
-Feature	Implementation
-Driven route	Polyline from gps_lat / gps_lng history
-Live car dot	CircleMarker updating per WebSocket frame
-Speed coloring	Segment polyline, color by gps_speed
-Session replay	Animate dot along stored path with time slider
-Auto-follow	map.setView([lat, lng]) on each update
-Lateral G & Longitudinal G — Recommendation Summary
-Data already exists on the car:
-
-Lateral G → imu_accel_y (convert: divide by 9.81)
-Longitudinal G → imu_accel_x (convert: divide by 9.81)
-Ideal widget: a G-circle / scatter plot showing the live G envelope (like Strava's cadence dial, but for cornering force).
-
-⚠ NOT IMPLEMENTED YET
-GPS Track Map, Lateral G, and Longitudinal G widgets are deferred.
-
-Both areas should be reserved with a placeholder using the existing Card component (/src/components/ui/Card.jsx) — matching the same widget pattern already used in BMSPage.jsx:
-
-<Card className="p-6">
-  <h2 className="text-xl font-bold text-text mb-4">GPS Track Map</h2>
-  {/* Coming soon */}
-</Card>
-
-<Card className="p-6">
-  <h2 className="text-xl font-bold text-text mb-4">G-Force</h2>
-  {/* Coming soon */}
-</Card> -->
+See TODO markers at [SettingsPage.jsx:97-99](src/pages/SettingsPage.jsx#L97-L99).

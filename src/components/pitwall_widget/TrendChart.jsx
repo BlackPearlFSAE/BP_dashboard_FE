@@ -34,28 +34,48 @@ export const TrendChart = ({ data }) => {
 
     const chartData = useMemo(() => {
         // Only use last 60s of data
-        const now = data.length > 0 ? Math.max(...data.map(d => d.timestamp)) : Date.now();
+        // --- [CHANGED] 2C: O(1) latest timestamp instead of O(n) Math.max(...spread) ---
+        // Original: Math.max(...data.map(d => d.timestamp))
+        // Problem: allocates a full mapped array then spreads into Math.max (stack-overflow risk + O(n))
+        // Fix: data arrives chronologically, so last element is the latest
+        const now = data.length > 0 ? (data[data.length - 1].timestamp ?? Date.now()) : Date.now();
         const cutoff = now - 60000;
-        const recent = data.filter(d => d.timestamp >= cutoff).sort((a, b) => a.timestamp - b.timestamp);
+        // --- [CHANGED] 2C: Binary search + slice instead of filter().sort() ---
+        // Original: data.filter(d => d.timestamp >= cutoff).sort((a, b) => a.timestamp - b.timestamp)
+        // Problem: filter creates a new array, sort mutates + O(n log n) — but data is already chronological
+        // Fix: binary search for the cutoff index, then a single slice (O(log n) + O(k) where k = result size)
+        let lo = 0, hi = data.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (data[mid].timestamp < cutoff) lo = mid + 1;
+            else hi = mid;
+        }
+        const recent = data.slice(lo);
 
         const datasets = keys.map((key, i) => {
+            // `power` is on the wire in Watts; convert to kW at the display boundary
+            // and plot it against the right-side Y axis.
+            const isPower = key === 'power';
             const points = recent
                 .filter(d => typeof d[key] === 'number')
-                .map(d => ({ x: d.timestamp, y: d[key] }));
+                .map(d => ({ x: d.timestamp, y: isPower ? d[key] / 1000 : d[key] }));
 
             return {
-                label: displayName(key),
+                label: isPower ? `${displayName(key)} (kW)` : displayName(key),
                 data: points,
                 borderColor: colors[i],
                 backgroundColor: colors[i],
                 borderWidth: 2,
                 pointRadius: 0,
                 tension: 0.3,
+                yAxisID: isPower ? 'yPower' : 'y',
             };
         }).filter(ds => ds.data.length > 0);
 
         return { datasets };
     }, [data, keys, colors]);
+
+    const hasPowerSeries = keys.includes('power');
 
     const textColor = theme === 'dark' ? '#e0e0e0' : '#111827';
     const gridColor = theme === 'dark' ? '#333' : '#e5e7eb';
@@ -90,8 +110,17 @@ export const TrendChart = ({ data }) => {
                 grid: { color: gridColor },
             },
             y: {
+                position: 'left',
                 ticks: { color: textColor },
                 grid: { color: gridColor },
+            },
+            // Right-side axis for `power` series (kW). Only shown when the Power preset is active.
+            yPower: {
+                position: 'right',
+                display: hasPowerSeries,
+                title: { display: hasPowerSeries, text: 'kW', color: textColor, font: { size: 10 } },
+                ticks: { color: textColor },
+                grid: { drawOnChartArea: false },
             },
         },
         interaction: { mode: 'nearest', axis: 'x', intersect: false },

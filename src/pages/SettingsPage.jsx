@@ -1,4 +1,19 @@
+import { useEffect, useState } from 'react';
 import { useTelemetryConfig } from '../context/TelemetryConfigContext';
+import { fetchConfig } from '../utils/api';
+
+// --- [CHANGED] 2D: Hook to read live diagnostics from window.__BP_DIAG ---
+// Polls the diagnostics object exposed by useTelemetryStream every second
+const useLiveDiag = () => {
+    const [diag, setDiag] = useState(null);
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (window.__BP_DIAG) setDiag({ ...window.__BP_DIAG });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+    return diag;
+};
 
 const StepInput = ({ value, onChange, step, min, max, unit, disabled }) => {
     const decrement = () => onChange(Math.max(min, value - step));
@@ -37,6 +52,16 @@ const StepInput = ({ value, onChange, step, min, max, unit, disabled }) => {
 
 export const SettingsPage = () => {
     const { renderInterval, setRenderInterval, bufferLimit, setBufferLimit } = useTelemetryConfig();
+    const [backendPublishInterval, setBackendPublishInterval] = useState(null);
+    const [configError, setConfigError] = useState(null);
+    // --- [CHANGED] 2D: Live diagnostics from useTelemetryStream ---
+    const diag = useLiveDiag();
+
+    useEffect(() => {
+        fetchConfig()
+            .then(cfg => setBackendPublishInterval(cfg.publishInterval))
+            .catch(err => setConfigError(err.message));
+    }, []);
 
     return (
         <div className="space-y-10 max-w-xl">
@@ -65,6 +90,29 @@ export const SettingsPage = () => {
                         max={2000}
                         unit="ms"
                     />
+                    {/* --- [CHANGED] 2D: Live actual render rate + explanatory note --- */}
+                    {/* Original: no feedback on whether configured interval matches reality */}
+                    {diag && (
+                        <div className="mt-2 p-2 rounded bg-surface border border-border text-xs font-mono space-y-1">
+                            <div className="flex justify-between">
+                                <span className="text-muted">Actual render delta</span>
+                                <span className="text-text">{diag.actualRenderDelta} ms</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted">Messages/sec</span>
+                                <span className="text-text">{diag.msgPerSec}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted">Buffer</span>
+                                <span className="text-text">{diag.bufferSize} / {diag.bufferCapacity}</span>
+                            </div>
+                        </div>
+                    )}
+                    <p className="text-xs text-muted mt-1">
+                        Effective render rate is limited by the data source publish rate
+                        {backendPublishInterval != null && ` and the server broadcast interval (${backendPublishInterval} ms)`}.
+                        Setting render interval below these values won't produce faster visual updates.
+                    </p>
                 </div>
 
                 <div className="space-y-2">
@@ -94,11 +142,9 @@ export const SettingsPage = () => {
                     <p className="text-xs text-muted">
                         Server-side broadcast rate. Controlled via backend .env — requires dev authentication to change.
                     </p>
-                    {/* TODO: fetch actual value from backend config endpoint */}
                     {/* TODO: enable editing when authenticated as dev (role-gated) */}
-                    {/* TODO: persist to DB so it syncs across all tabs/machines */}
                     <StepInput
-                        value={200}
+                        value={backendPublishInterval ?? 0}
                         onChange={() => {}}
                         step={50}
                         min={50}
@@ -107,7 +153,11 @@ export const SettingsPage = () => {
                         disabled
                     />
                     <p className="text-xs text-muted italic">
-                        Read-only — authenticate as developer to modify.
+                        {configError
+                            ? `Failed to load: ${configError}`
+                            : backendPublishInterval === null
+                                ? 'Loading from backend…'
+                                : 'Read-only — authenticate as developer to modify.'}
                     </p>
                 </div>
             </section>

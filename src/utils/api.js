@@ -2,7 +2,16 @@ const isDev = import.meta.env.DEV;
 const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
+export const CONFIG_API_URL = `${BASE_URL}/api/config`;
 export const STAT_DELETE_URL = `${BASE_URL}/api/stat/delete`;
+
+export const fetchConfig = async () => {
+    const response = await fetch(CONFIG_API_URL);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch config: ${response.status}`);
+    }
+    return await response.json();
+};
 
 export const fetchSessions = async (since = null) => {
     const url = since ? `${API_URL}?since=${encodeURIComponent(since)}` : API_URL;
@@ -98,6 +107,28 @@ export const getSessionData = async (session_id, offset = 0, limit = 1000) => {
         throw new Error(`Failed to fetch session data: ${response.status}`);
     }
     return await response.json();
+};
+
+const PAGE_SIZE = 10000;
+
+/**
+ * Fetch all data for a session in paginated batches.
+ * @param {string} session_id
+ * @param {(loaded: number) => void} [onProgress] - called after each page with total rows loaded so far
+ * @returns {Promise<Array>} all normalized rows, sorted by timestamp
+ */
+export const getAllSessionData = async (session_id, onProgress) => {
+    const all = [];
+    let offset = 0;
+    while (true) {
+        const batch = await getSessionData(session_id, offset, PAGE_SIZE);
+        all.push(...batch);
+        if (onProgress) onProgress(all.length);
+        if (batch.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+    }
+    all.sort((a, b) => a.timestamp - b.timestamp);
+    return all;
 };
 
 export const renameSession = async (session_id, name) => {
