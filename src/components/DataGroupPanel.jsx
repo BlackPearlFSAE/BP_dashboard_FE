@@ -3,7 +3,7 @@ import { Card } from './ui/Card';
 import { ChartSection } from './ChartSection';
 import { TableSection } from './TableSection';
 
-export const DataGroupPanel = ({ title, groups, data, icon, description }) => {
+export const DataGroupPanel = ({ title, groups, data, icon, description, playheadMs, t0 }) => {
     // Filter data by group names
     const filteredData = useMemo(() => {
         return data.filter(item => {
@@ -40,7 +40,7 @@ export const DataGroupPanel = ({ title, groups, data, icon, description }) => {
             ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <div>
-                        <ChartSection data={filteredData} groupFilter={groups} />
+                        <ChartSection data={filteredData} groupFilter={groups} playheadMs={playheadMs} t0={t0} />
                     </div>
                     <div>
                         <TableSection data={filteredData} groupFilter={groups} />

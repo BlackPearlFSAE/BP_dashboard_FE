@@ -84,7 +84,10 @@ export const PitwallPage = () => {
     const packCurrent = useLatest(data, ['bamo.power'], 'canCurrent');
 
     // ── Dynamics ──
-    const mechData = useLatestMulti(data, ['front.mech', 'rear.mech'], ['Wheel_RPM_L', 'Wheel_RPM_R', 'STR_Heave_mm', 'STR_Roll_mm']);
+    // Front and rear nodes independently publish Wheel_RPM_L/R and STR_Heave/Roll.
+    // Flattened keys collide across groups, so we filter per-group to get 4 distinct wheels.
+    const frontMech = useLatestMulti(data, ['front.mech'], ['Wheel_RPM_L', 'Wheel_RPM_R', 'STR_Heave_mm', 'STR_Roll_mm']);
+    const rearMech  = useLatestMulti(data, ['rear.mech'],  ['Wheel_RPM_L', 'Wheel_RPM_R', 'STR_Heave_mm', 'STR_Roll_mm']);
     const imuData = useLatestMulti(data, ['rear.odom'], ['imu_accel_x', 'imu_accel_y']);
 
     const wsStatusColor = {
@@ -93,8 +96,11 @@ export const PitwallPage = () => {
         disconnected: 'text-red-400'
     }[wsStatus] || 'text-muted';
 
-    const wheelDelta = (mechData.Wheel_RPM_L != null && mechData.Wheel_RPM_R != null)
-        ? Math.abs(mechData.Wheel_RPM_L - mechData.Wheel_RPM_R).toFixed(1)
+    const frontDelta = (frontMech.Wheel_RPM_L != null && frontMech.Wheel_RPM_R != null)
+        ? Math.abs(frontMech.Wheel_RPM_L - frontMech.Wheel_RPM_R).toFixed(1)
+        : undefined;
+    const rearDelta = (rearMech.Wheel_RPM_L != null && rearMech.Wheel_RPM_R != null)
+        ? Math.abs(rearMech.Wheel_RPM_L - rearMech.Wheel_RPM_R).toFixed(1)
         : undefined;
 
     return (
@@ -198,21 +204,36 @@ export const PitwallPage = () => {
                     </h3>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <StatCard label="Wheel RPM L" value={mechData.Wheel_RPM_L} unit="rpm" />
-                        <StatCard label="Wheel RPM R" value={mechData.Wheel_RPM_R} unit="rpm" />
+                        <StatCard label="Front Wheel L" value={frontMech.Wheel_RPM_L} unit="rpm" />
+                        <StatCard label="Front Wheel R" value={frontMech.Wheel_RPM_R} unit="rpm" />
                     </div>
-
-                    {wheelDelta !== undefined && (
+                    {frontDelta !== undefined && (
                         <div className="text-[10px] font-mono text-muted text-center -mt-2">
-                            ΔRpm: <span className={`font-bold ${parseFloat(wheelDelta) > 20 ? 'text-yellow-400' : 'text-text'}`}>
-                                {wheelDelta}
+                            Front ΔRpm: <span className={`font-bold ${parseFloat(frontDelta) > 20 ? 'text-yellow-400' : 'text-text'}`}>
+                                {frontDelta}
                             </span>
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                        <StatCard label="Heave" value={mechData.STR_Heave_mm} unit="mm" />
-                        <StatCard label="Roll" value={mechData.STR_Roll_mm} unit="mm" />
+                        <StatCard label="Rear Wheel L" value={rearMech.Wheel_RPM_L} unit="rpm" />
+                        <StatCard label="Rear Wheel R" value={rearMech.Wheel_RPM_R} unit="rpm" />
+                    </div>
+                    {rearDelta !== undefined && (
+                        <div className="text-[10px] font-mono text-muted text-center -mt-2">
+                            Rear ΔRpm: <span className={`font-bold ${parseFloat(rearDelta) > 20 ? 'text-yellow-400' : 'text-text'}`}>
+                                {rearDelta}
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatCard label="Front Heave" value={frontMech.STR_Heave_mm} unit="mm" />
+                        <StatCard label="Front Roll" value={frontMech.STR_Roll_mm} unit="mm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <StatCard label="Rear Heave" value={rearMech.STR_Heave_mm} unit="mm" />
+                        <StatCard label="Rear Roll" value={rearMech.STR_Roll_mm} unit="mm" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

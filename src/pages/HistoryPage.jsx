@@ -92,27 +92,14 @@ export const HistoryPage = () => {
     };
 
     const { startMs, endMs } = useMemo(() => {
-        if (!selectedSession?.start_time || !selectedSession?.end_time) {
-            return { startMs: 0, endMs: 0 };
-        }
+        if (!sessionData.length) return { startMs: 0, endMs: 0 };
         return {
-            startMs: new Date(selectedSession.start_time).getTime(),
-            endMs: new Date(selectedSession.end_time).getTime()
+            startMs: sessionData[0].timestamp,
+            endMs: sessionData[sessionData.length - 1].timestamp
         };
-    }, [selectedSession]);
+    }, [sessionData]);
 
-    const playbackData = useMemo(() => {
-        if (!sessionData.length) return [];
-        const currentTimestamp = startMs + (currentTime * (endMs - startMs));
-        // Binary search: find the last index where timestamp <= currentTimestamp
-        let lo = 0, hi = sessionData.length;
-        while (lo < hi) {
-            const mid = (lo + hi) >>> 1;
-            if (sessionData[mid].timestamp <= currentTimestamp) lo = mid + 1;
-            else hi = mid;
-        }
-        return sessionData.slice(0, lo);
-    }, [sessionData, currentTime, startMs, endMs]);
+    const playheadMs = startMs + (currentTime * (endMs - startMs));
 
     return (
         <div className="space-y-6">
@@ -192,8 +179,8 @@ export const HistoryPage = () => {
 
                             {/* Data Visualization */}
                             <div className="space-y-6">
-                                <DataGroupPanel {...DATA_GROUPS.DYNAMICS} data={playbackData} />
-                                <DataGroupPanel {...DATA_GROUPS.POWERTRAIN} data={playbackData} />
+                                <DataGroupPanel {...DATA_GROUPS.DYNAMICS} data={sessionData} playheadMs={playheadMs} t0={startMs} />
+                                <DataGroupPanel {...DATA_GROUPS.POWERTRAIN} data={sessionData} playheadMs={playheadMs} t0={startMs} />
                             </div>
 
                             {/* Export Controls */}

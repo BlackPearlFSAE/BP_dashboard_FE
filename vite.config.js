@@ -15,6 +15,25 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
     ],
+    // Split vendor code into dedicated chunks so chart.js (and its heavy
+    // peers) only download on routes that actually render charts, and
+    // react stays cacheable across deploys. See docs/code-splitting.md.
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'chart-vendor': [
+              'chart.js',
+              'react-chartjs-2',
+              'chartjs-plugin-zoom',
+              'chartjs-adapter-date-fns',
+              'hammerjs',
+            ],
+          },
+        },
+      },
+    },
     // Config development server (for npm run dev)
     server: {
       proxy: {

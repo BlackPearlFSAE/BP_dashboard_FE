@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import '../chartSetup';
 import { Chart as ReactChart } from 'react-chartjs-2';
 import { useTheme } from '../../context/ThemeContext';
 

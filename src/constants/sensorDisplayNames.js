@@ -16,7 +16,8 @@ export const SENSOR_DISPLAY_NAMES = {
     HV_ON:          'HV On',
     BSPD_OK:        'BSPD OK',
 
-    // ── Rear Mechanical ──
+    // ── Mechanical (same raw keys on both front.mech and rear.mech groups;
+    //    consumers differentiate by filtering data.group) ──
     Wheel_RPM_L:    'Wheel RPM Left',
     Wheel_RPM_R:    'Wheel RPM Right',
 

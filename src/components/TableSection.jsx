@@ -32,7 +32,7 @@ export const TableSection = ({ data, groupFilter }) => {
             });
         }
 
-        return res.sort((a, b) => {
+        return [...res].sort((a, b) => {
             return sortOrder === 'asc'
                 ? a.timestamp - b.timestamp
                 : b.timestamp - a.timestamp;
