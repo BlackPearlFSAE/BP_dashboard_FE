@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { useTelemetryStream } from '../hooks/useTelemetryStream';
-import { BMU_UNITS } from '../constants/dataGroups';
+import { BMU_UNITS } from '../utils/dataGroups';
 import { BMSCellChart } from '../components/battery_widget/BMSCellChart';
 import { BMSTempChart } from '../components/battery_widget/BMSTempChart';
 import { BMSFaultTable } from '../components/battery_widget/BMSFaultTable';

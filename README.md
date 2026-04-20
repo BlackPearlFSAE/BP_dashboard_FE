@@ -51,16 +51,16 @@ BP_dashboard_FE/
     └── utils/          # API helpers, WebSocket client
 ```
 
-### `vite.config.js`
+### `.env.local`
 
-Reads `VITE_BACKEND` at dev-server start and sets proxy targets accordingly:
+FE and BE share the same origin in both dev (Vite proxy) and prod (nginx), so `api.js` and `websocket.js` use relative URLs and need no configuration.
 
-| `VITE_BACKEND` | `/api` target | `/ws` target |
-|---|---|---|
-| `local` | `http://localhost:3000` | `ws://localhost:3000` |
-| _(anything else)_ | `https://blackpearl-ws-8z9a.onrender.com` | `wss://blackpearl-ws-8z9a.onrender.com` |
+Only override when FE and BE are on different hosts (e.g. Netlify FE + Render BE):
 
-No code changes needed to switch between local and production — only `.env.local`.
+```env
+VITE_API_URL=https://blackpearl-ws-8z9a.onrender.com
+VITE_WS_URL=wss://blackpearl-ws-8z9a.onrender.com/ws?role=dashboard
+```
 
 ## Routing
 
@@ -85,7 +85,7 @@ npm install         # install all modules
 npm run dev         # serves on http://localhost:5173
 ```
 
-By default the dev server proxies to the deployed backend. To run everything locally, create `.env.local` with `VITE_BACKEND=local` and start the backend server on port 3000. (Websocket TCP Port)
+The dev server proxies `/api` and `/ws` to `localhost:3000` by default — just start the [backend](../BlackPearl_WS) on port 3000 and everything works.
 
 For production I recommend using the free deployment service such as [netlify](https://www.netlify.com/)
 For manual deployment I suggest read this document

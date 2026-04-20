@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { MainLayout } from './components/layout/MainLayout';
+import { MainLayout } from './components/MainLayout';
 import { ThemeProvider } from './context/ThemeContext';
 import { SessionProvider } from './context/SessionContext';
 import { TelemetryConfigProvider } from './context/TelemetryConfigContext';

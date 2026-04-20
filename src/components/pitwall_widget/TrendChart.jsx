@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TimeSeriesChart } from '../chart/TimeSeriesChart';
-import { displayName } from '../../constants/sensorDisplayNames';
+import { displayName } from '../../utils/sensorDisplayNames';
 
 const TREND_PRESETS = {
     power: {
