@@ -1,5 +1,6 @@
-const isDev = import.meta.env.DEV;
-const BASE_URL = isDev ? "" : "https://blackpearl-ws-8z9a.onrender.com";
+// Relative by default (FE & BE served from same origin via nginx/Vite proxy).
+// Set VITE_API_URL at build time to override (e.g. Netlify FE → Render BE).
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 export const API_URL = `${BASE_URL}/api/stat/`;
 export const SESSION_API_URL = `${BASE_URL}/api/session`;
 export const CONFIG_API_URL = `${BASE_URL}/api/config`;

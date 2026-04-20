@@ -10,7 +10,7 @@ Race-engineer dashboard for the BP16B Formula Student Electric car. Live telemet
   <a href="../BlackPearl_WS">Backend repo</a>
 </p>
 
-![Pitwall](/images/Pitwallsnippet.png)
+![Pitwall](/images/Pitwall.png)
 
 ---
 
@@ -29,7 +29,7 @@ Race-engineer dashboard for the BP16B Formula Student Electric car. Live telemet
 |---|---|---|
 | Pitwall overview with gauges, trend, faults | Start / stop / rename sessions from any page | Browsable session list with search |
 | Dynamics, Powertrain, Battery pages | Backend handles all DB writes | Time-scrubber playback |
-| 10 fps throttled updates, stale detection | [WebSocket](doc/data-flow.md#live-telemetry-websocket) auto-reconnect | Export to JSON or CSV |
+| 10 fps throttled updates, stale detection | [WebSocket](docs/data-flow.md#live-telemetry-websocket) auto-reconnect | Export to JSON or CSV |
 
 ## Project Structure
 
@@ -51,16 +51,16 @@ BP_dashboard_FE/
     └── utils/          # API helpers, WebSocket client
 ```
 
-### `vite.config.js`
+### `.env.local`
 
-Reads `VITE_BACKEND` at dev-server start and sets proxy targets accordingly:
+FE and BE share the same origin in both dev (Vite proxy) and prod (nginx), so `api.js` and `websocket.js` use relative URLs and need no configuration.
 
-| `VITE_BACKEND` | `/api` target | `/ws` target |
-|---|---|---|
-| `local` | `http://localhost:3000` | `ws://localhost:3000` |
-| _(anything else)_ | `https://blackpearl-ws-8z9a.onrender.com` | `wss://blackpearl-ws-8z9a.onrender.com` |
+Only override when FE and BE are on different hosts (e.g. Netlify FE + Render BE):
 
-No code changes needed to switch between local and production — only `.env.local`.
+```env
+VITE_API_URL=https://blackpearl-ws-8z9a.onrender.com
+VITE_WS_URL=wss://blackpearl-ws-8z9a.onrender.com/ws?role=dashboard
+```
 
 ## Routing
 
@@ -85,16 +85,16 @@ npm install         # install all modules
 npm run dev         # serves on http://localhost:5173
 ```
 
-By default the dev server proxies to the deployed backend. To run everything locally, create `.env.local` with `VITE_BACKEND=local` and start the backend server on port 3000. (Websocket TCP Port)
+The dev server proxies `/api` and `/ws` to `localhost:3000` by default — just start the [backend](../BlackPearl_WS) on port 3000 and everything works.
 
 For production I recommend using the free deployment service such as [netlify](https://www.netlify.com/)
 For manual deployment I suggest read this document
-[Link](Link)
+[Link](https://medium.com/@napasinth/วิธีเอาทำ-public-www-จากเครื่อง-localhost-ไปเป็น-public-www-ด้วย-nginx-และ-ssh-tunnel-บน-vps-ae58716f957e)
 
 ## Learn More
-- [Data Flow](/docs/data-flow.md) — WebSocket stream, session recording, history REST
-- [Component Patterns](/docs/component-patterns.md) — `DataGroupPanel`, Pitwall widgets, Battery layout
-- [Theming](/docs/theming.md) — Tailwind v4 CSS variables and dark/light mode
+- [Data Flow](docs/data-flow.md) — WebSocket stream, session recording, history REST
+- [Component Patterns](docs/component-patterns.md) — `DataGroupPanel`, Pitwall widgets, Battery layout
+- [Theming](docs/theming.md) — Tailwind v4 CSS variables and dark/light mode
 
 ---
 

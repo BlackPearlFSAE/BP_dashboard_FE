@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { displayName } from '../constants/sensorDisplayNames';
+import { displayName } from '../utils/sensorDisplayNames';
 
 export const TableSection = ({ data, groupFilter }) => {
     const [filterTopic, setFilterTopic] = useState('all');

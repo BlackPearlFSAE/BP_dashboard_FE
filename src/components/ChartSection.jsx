@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { TimeSeriesChart } from './chart/TimeSeriesChart';
-import { displayName } from '../constants/sensorDisplayNames';
+import { displayName } from '../utils/sensorDisplayNames';
 
 const META_KEYS = new Set([
     'id', 'session_id', 'session_name', 'experiment_id', 'timestamp',

@@ -1,12 +1,10 @@
-// WebSocket client for live telemetry streaming
-const isDev = import.meta.env.DEV;
-
+// WebSocket client for live telemetry streaming.
+// Relative by default (FE & BE same origin via nginx/Vite proxy).
+// Set VITE_WS_URL at build time to override (e.g. FE & BE on different hosts).
 const getWsUrl = () => {
-  if (isDev) {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws?role=dashboard`;
-  }
-  return 'wss://blackpearl-ws-8z9a.onrender.com/?role=dashboard';
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws?role=dashboard`;
 };
 
 export const createTelemetrySocket = (onMessage, onStatusChange) => {

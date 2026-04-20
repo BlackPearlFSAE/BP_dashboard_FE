@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Activity, Zap, Battery, History, Settings, Sun, Moon, Circle, Square } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { useSession } from '../../context/SessionContext';
+import { useTheme } from '../context/ThemeContext';
+import { useSession } from '../context/SessionContext';
 
 const NAV_LINKS = [
     { to: '/', icon: LayoutDashboard, label: 'Pitwall', end: true },

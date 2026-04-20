@@ -6,7 +6,7 @@ import { PlaybackControls } from '../components/session/PlaybackControls';
 import { ExportControls } from '../components/session/ExportControls';
 import { DataGroupPanel } from '../components/DataGroupPanel';
 import { getSessionList, getAllSessionData, deleteSessionById, deleteAllSessions, deleteUnnamedSessions, deleteStatsByName, deleteUnnamedStats, deleteAllStats } from '../utils/api';
-import { DATA_GROUPS } from '../constants/dataGroups';
+import { DATA_GROUPS } from '../utils/dataGroups';
 import { format } from 'date-fns';
 
 export const HistoryPage = () => {

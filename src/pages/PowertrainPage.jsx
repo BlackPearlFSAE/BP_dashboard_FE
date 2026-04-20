@@ -1,7 +1,7 @@
 import React from 'react';
 import { DataGroupPanel } from '../components/DataGroupPanel';
 import { useTelemetryStream } from '../hooks/useTelemetryStream';
-import { DATA_GROUPS } from '../constants/dataGroups';
+import { DATA_GROUPS } from '../utils/dataGroups';
 import { Wifi, WifiOff } from 'lucide-react';
 
 export const PowertrainPage = () => {
