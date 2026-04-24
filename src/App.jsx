@@ -43,7 +43,7 @@ function App() {
     <ThemeProvider>
       <TelemetryConfigProvider>
       <SessionProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/blackpearl">
           <MainLayout>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
