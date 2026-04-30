@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .cc-history
 .wingman
+.claudeignore
 
 # Editor directories and files
 .vscode/*

@@ -27,8 +27,8 @@ export default defineConfig({
       },
     },
   },
-  // Dev server proxy — FE & BE share origin in prod (nginx), so we mirror
-  // that in dev by proxying /api and /ws to the local backend on :3000.
+  // Local Dev server proxy — FE & BE share origin in prod (nginx), 
+  // so we mirror the behavior by vite proxy
   server: {
     proxy: {
       '/api': 'http://localhost:3000',
