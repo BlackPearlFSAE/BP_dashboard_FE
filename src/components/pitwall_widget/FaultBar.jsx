@@ -22,8 +22,8 @@ export const FaultBar = ({ data }) => {
 
         return FAULT_SIGNALS.map(({ key, label }) => {
             const val = latest[key];
-            // val === 1 means OK/nominal, 0 or undefined means fault
-            const isOk = val === 1;
+            // val === 1 (datagen) or true (ESP32) means OK; 0, false, or undefined means fault
+            const isOk = val === 1 || val === true;
             return { key, label, isOk, value: val };
         });
     }, [data]);

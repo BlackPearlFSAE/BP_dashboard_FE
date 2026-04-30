@@ -9,6 +9,7 @@ export const SENSOR_DISPLAY_NAMES = {
     TMP:            'Radiator Temp',
     APPS:           'APPS_mm',
     BPPS:           'BPPS_mm',
+    steering:       'Steering Angle',
 
     // ── Front Faults ──
     AMS_OK:         'AMS OK',
@@ -33,6 +34,15 @@ export const SENSOR_DISPLAY_NAMES = {
     imu_gyro_x:     'IMU Gyro X',
     imu_gyro_y:     'IMU Gyro Y',
     imu_gyro_z:     'IMU Gyro Z',
+    imu_euler_roll:  'IMU Euler Roll',
+    imu_euler_pitch: 'IMU Euler Pitch',
+    imu_euler_yaw:   'IMU Euler Yaw',
+    imu_mag_x:       'IMU Mag X',
+    imu_mag_y:       'IMU Mag Y',
+    imu_mag_z:       'IMU Mag Z',
+    imu_grav_x:      'IMU Grav X',
+    imu_grav_y:      'IMU Grav Y',
+    imu_grav_z:      'IMU Grav Z',
 
     // ── BAMO Power ──
     canVoltage:         'Motor Voltage',
@@ -40,6 +50,8 @@ export const SENSOR_DISPLAY_NAMES = {
     power:              'Power',
     canVoltageValid:    'Motor Voltage Valid',
     canCurrentValid:    'Motor Current Valid',
+    rpm:                'Motor RPM',
+    rpmValid:           'Motor RPM Valid',
 
     // ── BAMO Temp ──
     motorTemp:          'Motor Temp',
